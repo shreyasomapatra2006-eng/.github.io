@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NexusTwin — Industry 6.0 Predictive Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#03080F;--bg2:#07111E;--bg3:#0C1A2E;--bg4:#112035;
+  --steel:#172840;--steel2:#1E3050;--steel3:#253A60;
+  --cyan:#00C8F0;--cyanD:rgba(0,200,240,0.13);--cyanG:rgba(0,200,240,0.28);
+  --teal:#00E8A0;--tealD:rgba(0,232,160,0.12);
+  --amber:#F59500;--amberD:rgba(245,149,0,0.13);
+  --red:#FF3560;--redD:rgba(255,53,96,0.13);
+  --purple:#9B7FFF;--purpleD:rgba(155,127,255,0.13);
+  --text:#BFD0E8;--textD:#567090;--textB:#E8F2FF;
+  --bdr:rgba(0,200,240,0.09);--bdr2:rgba(0,200,240,0.2);
+  --fh:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;
+  --r:10px;--r2:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:13px;overflow:hidden;}
+
+/* ── LAYOUT ── */
+.shell{display:grid;grid-template-columns:218px 1fr;grid-template-rows:52px 1fr;height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(90deg,var(--bg2) 0%,rgba(7,17,30,0.97) 100%);
+  border-bottom:1px solid var(--bdr);padding:0 22px;z-index:200;
+  backdrop-filter:blur(12px);
+}
+.logo{display:flex;align-items:center;gap:9px;font-family:var(--fh);font-size:17px;font-weight:700;color:var(--textB);text-decoration:none;}
+.logo-icon{width:30px;height:30px;}
+.logo em{color:var(--cyan);font-style:normal;}
+.tb-mid{display:flex;gap:2px;background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:3px;}
+.tb-seg{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:500;color:var(--textD);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tb-seg.on{background:var(--cyanD);color:var(--cyan);border:1px solid var(--bdr2);}
+.tb-right{display:flex;align-items:center;gap:12px;}
+.live-pill{display:flex;align-items:center;gap:5px;background:var(--tealD);border:1px solid rgba(0,232,160,.25);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;color:var(--teal);letter-spacing:.04em;text-transform:uppercase;}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--teal);animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+.tb-clock{font-family:var(--fm);font-size:11px;color:var(--textD);}
+.ib{width:30px;height:30px;border-radius:7px;border:1px solid var(--bdr);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--textD);transition:all .15s;position:relative;flex-shrink:0;}
+.ib:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyanD);}
+.ib .bdg{position:absolute;top:-3px;right:-3px;width:14px;height:14px;background:var(--red);border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;border:2px solid var(--bg2);}
+.av{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--cyanD),var(--purpleD));border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--cyan);cursor:pointer;font-family:var(--fh);}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;}
+.sb-inner{flex:1;padding:14px 0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.sb-sec{padding:0 10px;margin-bottom:4px;}
+.sb-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--textD);padding:0 8px 7px;}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--textD);font-size:12px;font-weight:500;transition:all .12s;border:1px solid transparent;user-select:none;}
+.ni:hover{background:var(--steel);color:var(--text);}
+.ni.on{background:var(--cyanD);color:var(--cyan);border-color:rgba(0,200,240,.16);}
+.ni svg{width:14px;height:14px;flex-shrink:0;}
+.nb{margin-left:auto;min-width:16px;height:16px;padding:0 4px;background:var(--redD);border:1px solid rgba(255,53,96,.25);border-radius:8px;font-size:8px;font-weight:700;color:var(--red);display:flex;align-items:center;justify-content:center;}
+.sb-foot{padding:12px 10px;border-top:1px solid var(--bdr);}
+.plant-card{background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:11px;position:relative;overflow:hidden;}
+.plant-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--teal));}
+.pc-name{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--textB);margin-bottom:2px;}
+.pc-sub{font-size:9px;color:var(--textD);}
+.pc-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:9px;}
+.pc-oee{font-family:var(--fm);font-size:23px;font-weight:500;color:var(--teal);line-height:1;}
+.pc-ol{font-size:9px;color:var(--textD);text-align:right;}
+.pc-trend{font-size:9px;color:var(--teal);}
+
+/* ── MAIN ── */
+.main{overflow-y:auto;background:var(--bg);position:relative;}
+.page{display:none;padding:20px;flex-direction:column;gap:14px;animation:fi .22s ease;}
+.page.on{display:flex;}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── COMMON ── */
+.phead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.ptitle{font-family:var(--fh);font-size:21px;font-weight:700;color:var(--textB);letter-spacing:-.3px;}
+.psub{font-size:11px;color:var(--textD);margin-top:3px;}
+.acts{display:flex;gap:7px;flex-shrink:0;}
+.btn{padding:6px 14px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;font-family:var(--fb);display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn-o{background:transparent;border-color:var(--bdr2);color:var(--textD);}
+.btn-o:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyanD);}
+.btn-p{background:var(--cyanD);border-color:var(--cyan);color:var(--cyan);}
+.btn-p:hover{background:rgba(0,200,240,.2);}
+.btn-t{background:var(--tealD);border-color:var(--teal);color:var(--teal);}
+.btn-r{background:var(--redD);border-color:var(--red);color:var(--red);}
+.btn-a{background:var(--amberD);border-color:var(--amber);color:var(--amber);}
+
+.panel{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bdr);}
+.ph2{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);}
+.ptag{font-family:var(--fm);font-size:9px;color:var(--textD);text-transform:uppercase;letter-spacing:.05em;}
+.pb{padding:14px 16px;}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:13px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:13px;}
+
+/* KPI */
+.kpi{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);padding:15px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s;}
+.kpi:hover{border-color:var(--bdr2);transform:translateY(-1px);}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
+.kpi.c::after{background:linear-gradient(90deg,var(--cyan),var(--teal));}
+.kpi.t::after{background:linear-gradient(90deg,var(--teal),var(--cyan));}
+.kpi.a::after{background:linear-gradient(90deg,var(--amber),#FFB300);}
+.kpi.r::after{background:linear-gradient(90deg,var(--red),var(--purple));}
+.kl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--textD);margin-bottom:8px;}
+.kv{font-family:var(--fh);font-size:28px;font-weight:700;color:var(--textB);line-height:1;}
+.kv .ku{font-size:13px;font-weight:500;color:var(--textD);margin-left:2px;}
+.kd{margin-top:5px;font-size:10px;font-weight:500;}
+.up{color:var(--teal);}
+.dn{color:var(--red);}
+.wa{color:var(--amber);}
+.kbar{height:2px;background:var(--steel);border-radius:2px;margin-top:10px;overflow:hidden;}
+.kbf{height:100%;border-radius:2px;transition:width .8s ease;}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid;line-height:1.5;}
+.cc{background:var(--redD);color:var(--red);border-color:rgba(255,53,96,.2);}
+.cw{background:var(--amberD);color:var(--amber);border-color:rgba(245,149,0,.2);}
+.ci{background:var(--cyanD);color:var(--cyan);border-color:rgba(0,200,240,.2);}
+.ct{background:var(--tealD);color:var(--teal);border-color:rgba(0,232,160,.2);}
+.cp{background:var(--purpleD);color:var(--purple);border-color:rgba(155,127,255,.2);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--textD);padding:9px 14px;text-align:left;border-bottom:1px solid var(--bdr);white-space:nowrap;}
+.tbl td{font-size:11px;padding:10px 14px;border-bottom:1px solid var(--bdr);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr{cursor:pointer;transition:background .12s;}
+.tbl tbody tr:hover td{background:var(--steel);}
+.mono{font-family:var(--fm);}
+.cy{color:var(--cyan);}
+.dim{color:var(--textD);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--steel2);border-radius:2px;}
+
+/* ══ OVERVIEW ══ */
+.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:13px;}
+.at{background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:11px;cursor:pointer;transition:all .18s;}
+.at:hover{border-color:var(--bdr2);background:var(--steel);transform:translateY(-1px);}
+.at.sel{border-color:var(--cyan);background:var(--cyanD);box-shadow:0 0 14px rgba(0,200,240,.1);}
+.at-top{display:flex;justify-content:space-between;margin-bottom:5px;}
+.at-id{font-family:var(--fm);font-size:8.5px;color:var(--textD);}
+.dot{width:7px;height:7px;border-radius:50%;}
+.ok{background:var(--teal);box-shadow:0 0 5px rgba(0,232,160,.5);}
+.warn{background:var(--amber);box-shadow:0 0 5px rgba(245,149,0,.5);animation:pulse .9s infinite;}
+.crit{background:var(--red);box-shadow:0 0 5px rgba(255,53,96,.5);animation:pulse .5s infinite;}
+.at-name{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--text);}
+.at-type{font-size:9px;color:var(--textD);margin-top:1px;}
+.rul-row{display:flex;justify-content:space-between;font-size:8.5px;color:var(--textD);margin:7px 0 3px;}
+.rbar{height:3px;background:var(--steel2);border-radius:2px;overflow:hidden;}
+.rf{height:100%;border-radius:2px;transition:width 1s ease;}
+.rh{background:linear-gradient(90deg,var(--teal),#00c8a0);}
+.rm{background:linear-gradient(90deg,var(--amber),#e07000);}
+.rl{background:linear-gradient(90deg,var(--red),#cc0030);}
+
+.sl{display:flex;flex-direction:column;gap:7px;padding:12px 14px;}
+.sr{display:flex;align-items:center;gap:8px;}
+.sn{font-size:10px;font-weight:500;color:var(--text);width:115px;flex-shrink:0;}
+.st{flex:1;height:26px;overflow:hidden;border-radius:3px;background:var(--bg3);}
+.sc{width:100%;height:26px;display:block;}
+.sv{font-family:var(--fm);font-size:10px;color:var(--cyan);width:50px;text-align:right;flex-shrink:0;}
+.su{font-size:8.5px;color:var(--textD);width:24px;flex-shrink:0;}
+
+.insight{background:linear-gradient(135deg,rgba(0,200,240,.06),rgba(0,232,160,.04));border:1px solid rgba(0,200,240,.18);border-radius:9px;padding:12px;display:flex;gap:10px;margin:0 14px 13px;}
+.ins-ic{width:28px;height:28px;border-radius:7px;background:var(--cyanD);border:1px solid rgba(0,200,240,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ins-txt{font-size:11px;color:var(--text);line-height:1.65;}
+.ins-txt strong{color:var(--cyan);}
+
+.af-list{display:flex;flex-direction:column;max-height:230px;overflow-y:auto;}
+.af-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .12s;}
+.af-row:hover{background:var(--steel);}
+.af-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.af-msg{font-size:11px;font-weight:500;color:var(--text);line-height:1.4;}
+.af-meta{font-size:9px;color:var(--textD);margin-top:2px;display:flex;gap:7px;}
+
+/* ══ 3D TWIN PAGE ══ */
+.twin-header-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
+.twin-selector{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all .18s;flex-shrink:0;min-width:130px;}
+.twin-selector:hover{border-color:var(--bdr2);background:var(--steel);}
+.twin-selector.atv{border-color:var(--cyan);background:var(--cyanD);box-shadow:0 0 14px rgba(0,200,240,.12);}
+.ts-id{font-family:var(--fm);font-size:8.5px;color:var(--textD);margin-bottom:3px;}
+.ts-name{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--textB);}
+.ts-rul{font-size:9px;margin-top:3px;}
+
+.twin-main{display:grid;grid-template-columns:1fr 300px;gap:13px;align-items:start;}
+.twin-3d-wrap{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;position:relative;}
+.twin-3d-canvas{width:100%;height:400px;display:block;}
+.twin-3d-hud{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:5px;pointer-events:none;}
+.hud-badge{background:rgba(3,8,15,.75);border:1px solid var(--bdr2);border-radius:6px;padding:4px 10px;font-family:var(--fm);font-size:9px;color:var(--cyan);backdrop-filter:blur(6px);}
+.twin-3d-controls{position:absolute;bottom:12px;right:12px;display:flex;gap:6px;}
+.tc3{padding:5px 10px;border-radius:6px;background:rgba(3,8,15,.8);border:1px solid var(--bdr2);font-size:10px;color:var(--textD);cursor:pointer;transition:all .15s;backdrop-filter:blur(6px);font-family:var(--fb);}
+.tc3:hover{color:var(--cyan);border-color:var(--cyan);}
+.twin-stats{display:flex;flex-direction:column;gap:9px;height:400px;overflow-y:auto;}
+.ts-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:12px;flex-shrink:0;}
+.ts-param{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.ts-pl{font-size:9px;color:var(--textD);text-transform:uppercase;letter-spacing:.06em;}
+.ts-pv{font-family:var(--fm);font-size:17px;font-weight:500;color:var(--textB);}
+.ts-pu{font-size:9px;color:var(--textD);margin-left:3px;}
+.ts-bar{height:4px;background:var(--steel);border-radius:2px;overflow:hidden;}
+.ts-bf{height:100%;border-radius:2px;transition:width .6s ease;}
+.ts-mini-chart{height:50px;margin-top:6px;}
+
+.twin-log{display:flex;flex-direction:column;max-height:180px;overflow-y:auto;}
+.tl-row{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid var(--bdr);}
+.tl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.tl-msg{font-size:10.5px;color:var(--text);line-height:1.4;}
+.tl-time{font-family:var(--fm);font-size:9px;color:var(--textD);}
+
+/* ══ SENSOR STREAMS ══ */
+.ss-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ss-chip{padding:5px 12px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--textD);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--fb);}
+.ss-chip.on{border-color:var(--cyan);color:var(--cyan);background:var(--cyanD);}
+.wave-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;margin-bottom:2px;transition:border-color .15s;}
+.wave-card:hover{border-color:var(--bdr2);}
+.wc-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bdr);}
+.wc-name{font-family:var(--fh);font-size:11px;font-weight:600;color:var(--textB);}
+.wc-val-wrap{display:flex;align-items:baseline;gap:3px;}
+.wc-val{font-family:var(--fm);font-size:15px;font-weight:500;transition:color .3s;}
+.wc-unit{font-size:9px;color:var(--textD);}
+.wc-status{font-size:9px;padding:2px 8px;border-radius:4px;font-weight:600;}
+.wc-ok{background:var(--tealD);color:var(--teal);}
+.wc-anom{background:var(--redD);color:var(--red);}
+.wave-canvas{width:100%;height:76px;display:block;background:var(--bg3);}
+.wave-foot{display:flex;gap:16px;padding:7px 14px;border-top:1px solid var(--bdr);}
+.wf-stat{font-size:9px;color:var(--textD);}
+.wf-stat span{font-family:var(--fm);font-size:10px;color:var(--text);margin-left:3px;}
+.anomaly-count{color:var(--red) !important;}
+
+/* ══ ALERTS ══ */
+.af-filters{display:flex;gap:7px;flex-wrap:wrap;}
+.af-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--textD);font-size:11px;cursor:pointer;transition:all .15s;font-family:var(--fb);}
+.af-btn.on{background:var(--cyanD);border-color:var(--cyan);color:var(--cyan);}
+.alert-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bdr);transition:background .12s;}
+.alert-row:hover{background:var(--steel);}
+.alert-row.acked{opacity:.45;}
+.ar-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ar-msg{flex:1;min-width:0;}
+.ar-text{font-size:12px;font-weight:500;color:var(--text);line-height:1.4;}
+.ar-meta{font-size:9px;color:var(--textD);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+.ar-acts{display:flex;gap:5px;flex-shrink:0;}
+.ar-btn{padding:4px 9px;border-radius:5px;font-size:10px;font-weight:600;border:1px solid var(--bdr);background:transparent;color:var(--textD);cursor:pointer;transition:all .12s;font-family:var(--fb);}
+.ar-btn:hover{border-color:var(--teal);color:var(--teal);background:var(--tealD);}
+.ar-esc:hover{border-color:var(--red);color:var(--red);background:var(--redD);}
+
+/* ══ RUL ══ */
+.rul-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+.rc{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px;transition:all .18s;}
+.rc:hover{border-color:var(--bdr2);transform:translateY(-1px);}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.rc-id{font-family:var(--fm);font-size:9px;color:var(--cyan);margin-bottom:3px;}
+.rc-name{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);}
+.rc-type{font-size:9px;color:var(--textD);}
+.rc-days{font-family:var(--fm);font-size:26px;font-weight:700;line-height:1;text-align:right;}
+.rc-dlbl{font-size:9px;color:var(--textD);text-align:right;}
+.rc-gauge{height:5px;background:var(--steel);border-radius:3px;margin:10px 0 8px;overflow:hidden;}
+.rc-gf{height:100%;border-radius:3px;transition:width 1s ease;}
+.rc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.rc-stat{background:var(--bg3);border-radius:7px;padding:7px 8px;}
+.rc-sl{font-size:8px;color:var(--textD);margin-bottom:2px;}
+.rc-sv{font-family:var(--fm);font-size:11px;font-weight:500;}
+
+/* ══ KANBAN ══ */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;align-items:start;}
+.kb-col{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;}
+.kb-head{padding:11px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;}
+.kb-title{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);}
+.kb-count{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.kb-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px;}
+.wo{background:var(--bg3);border:1px solid var(--bdr);border-radius:9px;padding:11px;cursor:pointer;transition:all .15s;}
+.wo:hover{border-color:var(--bdr2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.wo-top{display:flex;justify-content:space-between;margin-bottom:5px;}
+.wo-id{font-family:var(--fm);font-size:8.5px;color:var(--textD);}
+.wo-title{font-size:11px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:3px;}
+.wo-asset{font-size:9px;color:var(--cyan);}
+.wo-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.wo-due{font-size:9px;color:var(--textD);}
+.wo-av{width:20px;height:20px;border-radius:50%;background:var(--steel2);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--text);}
+.add-wo{width:100%;padding:7px;border-radius:6px;border:1px dashed var(--bdr2);background:transparent;color:var(--textD);font-size:11px;cursor:pointer;transition:all .15s;font-family:var(--fb);}
+.add-wo:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyanD);}
+
+/* ══ RUL FORECASTS ══ */
+.rul-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+.rul-det-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r2);padding:15px;transition:all .18s;cursor:pointer;}
+.rul-det-card:hover{border-color:var(--bdr2);transform:translateY(-1px);}
+.rul-det-card.sel-rul{border-color:var(--cyan);background:var(--cyanD);}
+.rdc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.rdc-id{font-family:var(--fm);font-size:9px;color:var(--cyan);margin-bottom:3px;}
+.rdc-name{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);}
+.rdc-type{font-size:9px;color:var(--textD);}
+.rdc-days{font-family:var(--fm);font-size:28px;font-weight:700;line-height:1;text-align:right;}
+.rdc-dlbl{font-size:9px;color:var(--textD);text-align:right;margin-top:1px;}
+.rdc-gauge{height:5px;background:var(--steel);border-radius:3px;margin:10px 0 8px;overflow:hidden;}
+.rdc-gf{height:100%;border-radius:3px;transition:width 1s ease;}
+.rdc-footer{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.rdc-stat{background:var(--bg3);border-radius:6px;padding:6px 8px;flex:1;min-width:60px;}
+.rdc-sl{font-size:8px;color:var(--textD);margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em;}
+.rdc-sv{font-family:var(--fm);font-size:11px;font-weight:500;}
+.rul-detail-panel{display:grid;grid-template-columns:2fr 1fr;gap:13px;}
+.rul-forecast-chart{height:220px;padding:10px 14px;}
+.rul-model-info{padding:14px;display:flex;flex-direction:column;gap:10px;}
+.mi-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bdr);}
+.mi-row:last-child{border-bottom:none;}
+.mi-label{font-size:10px;color:var(--textD);}
+.mi-val{font-family:var(--fm);font-size:11px;font-weight:500;color:var(--textB);}
+.rul-insight-strip{padding:14px 16px;background:linear-gradient(135deg,rgba(0,200,240,.05),rgba(0,232,160,.03));border-top:1px solid var(--bdr);display:flex;gap:10px;align-items:flex-start;}
+
+/* ══ WORK ORDERS (ENHANCED) ══ */
+.wo-header-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+.wos-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:13px;text-align:center;}
+.wos-num{font-family:var(--fh);font-size:26px;font-weight:700;color:var(--textB);line-height:1;}
+.wos-lbl{font-size:9px;color:var(--textD);margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+.wo-filter-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.wo-filter{padding:5px 12px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--textD);font-size:11px;cursor:pointer;transition:all .15s;font-family:var(--fb);}
+.wo-filter.on{background:var(--cyanD);border-color:var(--cyan);color:var(--cyan);}
+.wo-detail-row{background:var(--bg3);border:1px solid var(--bdr);border-radius:9px;padding:13px 16px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.wo-detail-row:hover{border-color:var(--bdr2);background:var(--steel);}
+.wdr-top{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.wdr-id{font-family:var(--fm);font-size:9px;color:var(--textD);width:70px;flex-shrink:0;}
+.wdr-title{font-size:12px;font-weight:600;color:var(--textB);flex:1;}
+.wdr-body{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+.wdr-field{display:flex;flex-direction:column;gap:2px;}
+.wdr-fl{font-size:8.5px;color:var(--textD);text-transform:uppercase;letter-spacing:.05em;}
+.wdr-fv{font-size:11px;color:var(--text);}
+.wdr-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end;}
+.wo-prog-bar{height:3px;background:var(--steel);border-radius:2px;overflow:hidden;margin-top:6px;}
+.wo-prog-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+
+/* ══ MAINTENANCE PLAN (ENHANCED) ══ */
+.mp-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+.mp-kpi{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:13px;}
+.mpk-val{font-family:var(--fh);font-size:22px;font-weight:700;color:var(--textB);margin-bottom:3px;}
+.mpk-lbl{font-size:9px;color:var(--textD);text-transform:uppercase;letter-spacing:.06em;}
+.mp-gantt{overflow-x:auto;padding:14px;}
+.gantt-header{display:flex;margin-bottom:6px;padding-left:140px;}
+.gantt-col-lbl{font-size:9px;color:var(--textD);flex:1;text-align:center;}
+.gantt-row{display:flex;align-items:center;margin-bottom:5px;gap:8px;}
+.gantt-label{width:140px;flex-shrink:0;font-size:10px;font-weight:500;color:var(--text);}
+.gantt-track{flex:1;height:22px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden;}
+.gantt-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:9px;font-weight:600;white-space:nowrap;position:absolute;top:0;}
+.gantt-today{position:absolute;top:0;bottom:0;width:1px;background:var(--cyan);opacity:.6;z-index:2;}
+.mp-schedule-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:13px;cursor:pointer;transition:all .15s;}
+.mp-schedule-card:hover{border-color:var(--bdr2);transform:translateY(-1px);}
+.msc-date{font-family:var(--fm);font-size:10px;color:var(--cyan);margin-bottom:4px;}
+.msc-title{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);margin-bottom:4px;}
+.msc-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.msc-field{font-size:9px;color:var(--textD);}
+.msc-field span{color:var(--text);}
+
+/* ══ CALENDAR ══ */
+.cal-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.cal-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--textD);text-align:center;padding:5px 0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-cell{background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;padding:6px;min-height:70px;cursor:pointer;transition:all .15s;}
+.cal-cell:hover{border-color:var(--bdr2);}
+.cal-cell.today{border-color:var(--cyan);background:var(--cyanD);}
+.cal-cell.has-ev{border-color:rgba(245,149,0,.22);}
+.cal-num{font-family:var(--fm);font-size:10px;color:var(--textD);margin-bottom:4px;}
+.cal-cell.today .cal-num{color:var(--cyan);}
+.cal-ev{font-size:8px;padding:2px 4px;border-radius:3px;margin-bottom:2px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ev-c{background:var(--redD);color:var(--red);}
+.ev-w{background:var(--amberD);color:var(--amber);}
+.ev-m{background:var(--tealD);color:var(--teal);}
+
+/* ══ RCA ══ */
+.shap-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bdr);}
+.shap-row:last-child{border-bottom:none;}
+.shap-feat{font-size:11px;color:var(--text);width:160px;flex-shrink:0;}
+.shap-track{flex:1;height:14px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.shap-bar{height:100%;border-radius:3px;transition:width .9s ease;}
+.shap-pos{background:linear-gradient(90deg,rgba(255,53,96,.5),var(--red));}
+.shap-neg{background:linear-gradient(90deg,rgba(0,200,240,.5),var(--cyan));}
+.shap-val{font-family:var(--fm);font-size:10px;font-weight:500;width:48px;text-align:right;flex-shrink:0;}
+
+.ft-wrap{display:flex;flex-direction:column;align-items:center;gap:0;padding:16px;}
+.ft-node-box{padding:8px 16px;border-radius:8px;border:1px solid;font-size:11px;font-weight:600;text-align:center;}
+.ft-root-box{background:var(--redD);border-color:var(--red);color:var(--red);}
+.ft-mid-box{background:var(--amberD);border-color:var(--amber);color:var(--amber);}
+.ft-leaf-box{background:var(--bg3);border-color:var(--bdr2);color:var(--textD);}
+.ft-line{width:1px;height:18px;background:var(--bdr2);}
+.ft-branch{display:flex;gap:18px;position:relative;}
+.ft-branch::before{content:'';position:absolute;top:0;height:1px;background:var(--bdr2);left:50px;right:50px;}
+.ft-sub{display:flex;flex-direction:column;align-items:center;}
+
+/* ══ TREND ══ */
+.trend-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.tr-chip{padding:4px 11px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--textD);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--fb);}
+.tr-chip.on{background:var(--purpleD);border-color:var(--purple);color:var(--purple);}
+.corr-grid{display:grid;gap:2px;}
+.cm-cell{border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:600;cursor:default;}
+.cm-row-label{font-size:8.5px;color:var(--textD);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;}
+.cm-col-label{font-size:8.5px;color:var(--textD);display:flex;align-items:center;justify-content:center;writing-mode:vertical-lr;height:36px;}
+
+/* ══ ADD ASSET MODAL ══ */
+.modal-backdrop{position:fixed;inset:0;background:rgba(3,8,15,.8);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fi .2s ease;}
+.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:16px;padding:0;width:520px;max-width:90vw;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(0,200,240,.08);}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(0,200,240,.06),transparent);}
+.modal-title{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--textB);}
+.modal-sub{font-size:11px;color:var(--textD);margin-top:2px;}
+.modal-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--bdr);background:transparent;color:var(--textD);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:14px;}
+.modal-close:hover{border-color:var(--red);color:var(--red);background:var(--redD);}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:14px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgroup{display:flex;flex-direction:column;gap:5px;}
+.fgroup.full{grid-column:1/-1;}
+.flabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--textD);}
+.finput{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--textB);font-family:var(--fb);outline:none;transition:border-color .15s;width:100%;}
+.finput:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,200,240,.1);}
+.fselect{background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--textB);font-family:var(--fb);outline:none;transition:border-color .15s;width:100%;cursor:pointer;-webkit-appearance:none;}
+.fselect:focus{border-color:var(--cyan);}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end;background:rgba(0,0,0,.2);}
+.asset-preview{background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;}
+.ap-icon{width:36px;height:36px;border-radius:9px;background:var(--cyanD);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ap-id{font-family:var(--fm);font-size:9px;color:var(--cyan);}
+.ap-name{font-family:var(--fh);font-size:12px;font-weight:600;color:var(--textB);}
+.ap-type{font-size:9px;color:var(--textD);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--teal);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:2000;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideup .3s ease;max-width:320px;}
+@keyframes slideup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.toast-icon{width:24px;height:24px;border-radius:6px;background:var(--tealD);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.toast-msg{font-size:12px;color:var(--textB);}
+.toast-sub{font-size:10px;color:var(--textD);margin-top:1px;}
+
+/* REALTIME TICKER */
+.rt-bar{display:flex;gap:0;overflow:hidden;position:relative;}
+.rt-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(90deg,var(--bg2),transparent);z-index:1;}
+.rt-bar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:40px;background:linear-gradient(270deg,var(--bg2),transparent);z-index:1;}
+.rt-ticker{display:flex;gap:0;animation:ticker 30s linear infinite;}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.rt-item{display:flex;align-items:center;gap:8px;padding:0 20px;border-right:1px solid var(--bdr);white-space:nowrap;}
+.rt-label{font-size:9px;color:var(--textD);text-transform:uppercase;letter-spacing:.05em;}
+.rt-val{font-family:var(--fm);font-size:11px;font-weight:500;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ TOPBAR ═══ -->
+<header class="topbar">
+  <a class="logo" href="#">
+    <svg class="logo-icon" viewBox="0 0 30 30" fill="none">
+      <rect x="1.5" y="1.5" width="27" height="27" rx="7" fill="rgba(0,200,240,0.08)" stroke="rgba(0,200,240,.35)" stroke-width="1"/>
+      <path d="M5 15h4l2.5-6 3.5 12 2.5-7 2 3h5" stroke="#00C8F0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Nexus<em>Twin</em>
+  </a>
+  <div class="tb-mid" id="tb-segs"></div>
+  <div class="tb-right">
+    <div class="live-pill"><span class="pulse"></span>All systems live</div>
+    <div class="tb-clock" id="clock">--:--:--</div>
+    <div class="ib"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5a5 5 0 015 5v2.5l1 2H2l1-2V6.5a5 5 0 015-5zM6.5 13.5a1.5 1.5 0 003 0"/></svg><div class="bdg" id="alert-bdg">3</div></div>
+    <div class="ib" title="Settings"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7"/></svg></div>
+    <div class="av">AK</div>
+  </div>
+</header>
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar">
+  <div class="sb-inner" id="sidebar"></div>
+  <div class="sb-foot">
+    <div class="plant-card">
+      <div class="pc-name">Plant Alpha — Bay 4</div>
+      <div class="pc-sub">Chennai, India · Zone A3</div>
+      <div class="pc-row">
+        <div class="pc-oee" id="oee-val">91.4%</div>
+        <div class="pc-ol">OEE<br><span class="pc-trend">↑ 2.1%</span></div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ PAGES ═══ -->
+<main class="main" id="main">
+
+  <!-- ── OVERVIEW ── -->
+  <div class="page on" id="page-overview">
+    <div class="phead">
+      <div><div class="ptitle">Asset Intelligence</div><div class="psub" id="ov-sub">12 assets monitored · Updated just now</div></div>
+      <div class="acts">
+        <button class="btn btn-o" onclick="openAddAsset()">+ Add Asset</button>
+        <button class="btn btn-p">↓ Export</button>
+      </div>
+    </div>
+    <!-- Real-time ticker -->
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="rt-bar"><div class="rt-ticker" id="rt-ticker"></div></div>
+    </div>
+    <div class="g4" id="kpi-row"></div>
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><div class="ph2">Asset Health Matrix</div><div class="ptag">Click to inspect</div></div>
+        <div class="asset-grid" id="asset-grid"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Live Sensor Streams</div><div class="ptag" id="sel-lbl">—</div></div>
+        <div class="sl" id="ov-sensors"></div>
+        <div class="insight">
+          <div class="ins-ic"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#00C8F0" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3l2 2"/></svg></div>
+          <div class="ins-txt" id="ai-insight">Loading AI analysis…</div>
+        </div>
+      </div>
+    </div>
+    <div class="g3">
+      <div class="panel">
+        <div class="ph"><div class="ph2">Degradation Trend & RUL Projection</div><div class="ptag">30-day window</div></div>
+        <div style="height:190px;padding:10px 14px"><canvas id="ov-chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Alert Feed</div><div class="ptag" id="af-ptag">Live</div></div>
+        <div class="af-list" id="ov-alert-list"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">AI-Scheduled Maintenance Queue</div><div class="ptag">RL-optimised · sorted by urgency</div></div>
+      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Asset</th><th>Fault</th><th>RUL</th><th>Priority</th><th>Action</th><th>Confidence</th><th>Scheduled</th></tr></thead><tbody id="maint-tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ── DIGITAL TWINS ── -->
+  <div class="page" id="page-twins">
+    <div class="phead">
+      <div><div class="ptitle">Digital Twin Viewer</div><div class="psub">Real-time 3D physics-based virtual replicas</div></div>
+      <div class="acts">
+        <button class="btn btn-o" onclick="resetCamera()">⟳ Reset Camera</button>
+        <button class="btn btn-a" onclick="simulateFault()">⚠ Simulate Fault</button>
+        <button class="btn btn-p" onclick="syncAll()">↺ Sync All</button>
+      </div>
+    </div>
+    <div class="twin-header-row" id="twin-selectors"></div>
+    <div class="twin-main">
+      <div class="twin-3d-wrap">
+        <canvas class="twin-3d-canvas" id="three-canvas"></canvas>
+        <div class="twin-3d-hud" id="twin-hud"></div>
+        <div class="twin-3d-controls">
+          <button class="tc3" onclick="setWireframe(false)">Solid</button>
+          <button class="tc3" onclick="setWireframe(true)">Wireframe</button>
+          <button class="tc3" onclick="toggleRotate()">⟳ Rotate</button>
+        </div>
+      </div>
+      <div class="twin-stats" id="twin-stats"></div>
+    </div>
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><div class="ph2">Twin Event Log</div><div class="ptag">Live · auto-scroll</div></div>
+        <div class="twin-log" id="twin-log"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Thermal Map</div><div class="ptag">Simulated heat distribution</div></div>
+        <div style="height:140px;padding:10px 14px"><canvas id="thermal-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SENSOR STREAMS ── -->
+  <div class="page" id="page-sensors">
+    <div class="phead">
+      <div><div class="ptitle">Sensor Stream Explorer</div><div class="psub">Real-time multi-channel waveform analysis with anomaly detection</div></div>
+      <div class="acts">
+        <div class="ss-toolbar" id="ss-toolbar"></div>
+        <button class="btn btn-p" id="freeze-btn" onclick="toggleFreeze()">⏸ Freeze</button>
+      </div>
+    </div>
+    <div id="wave-panels"></div>
+  </div>
+
+  <!-- ── ALERTS ── -->
+  <div class="page" id="page-alerts">
+    <div class="phead">
+      <div><div class="ptitle">Alert Management</div><div class="psub" id="alert-sub">Loading…</div></div>
+      <div class="acts">
+        <div class="af-filters" id="af-filters"></div>
+        <button class="btn btn-t" onclick="ackAll()">✓ Ack All</button>
+      </div>
+    </div>
+    <div class="panel"><div id="alert-list"></div></div>
+  </div>
+
+  <!-- ── RUL ── -->
+  <div class="page" id="page-rul">
+    <div class="phead">
+      <div><div class="ptitle">RUL Forecast Dashboard</div><div class="psub">AI-estimated Remaining Useful Life — LSTM + Temporal Fusion Transformer</div></div>
+      <div class="acts"><button class="btn btn-p">↓ Export Forecasts</button></div>
+    </div>
+    <div class="rul-cards" id="rul-cards"></div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">Multi-Asset RUL Comparison</div><div class="ptag">Forecast bands · next 20 days</div></div>
+      <div style="height:180px;padding:10px 14px"><canvas id="rul-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── WORK ORDERS ── -->
+  <div class="page" id="page-workorders">
+    <div class="phead">
+      <div><div class="ptitle">Work Orders</div><div class="psub">Maintenance pipeline — drag to update status</div></div>
+      <div class="acts"><button class="btn btn-p" onclick="openAddAsset('wo')">+ New Order</button></div>
+    </div>
+    <div class="kanban" id="kanban"></div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">Work Order Log</div><div class="ptag">All orders</div></div>
+      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>WO#</th><th>Asset</th><th>Task</th><th>Status</th><th>Tech</th><th>Due</th></tr></thead><tbody id="wo-tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ── MAINTENANCE PLAN ── -->
+  <div class="page" id="page-maintplan">
+    <div class="phead">
+      <div><div class="ptitle">Maintenance Calendar</div><div class="psub">June 2026 · AI-optimised schedule</div></div>
+      <div class="acts">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--textD)"><span style="width:8px;height:8px;border-radius:2px;background:var(--red);display:inline-block"></span>Critical</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--textD)"><span style="width:8px;height:8px;border-radius:2px;background:var(--amber);display:inline-block"></span>High</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--textD)"><span style="width:8px;height:8px;border-radius:2px;background:var(--teal);display:inline-block"></span>Planned</span>
+        </div>
+        <button class="btn btn-p">↓ Export ICS</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">June 2026</div><div class="ptag">8 scheduled interventions</div></div>
+      <div style="padding:14px">
+        <div class="cal-labels" id="cal-labels"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">Upcoming Interventions</div><div class="ptag">Next 30 days</div></div>
+      <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Date</th><th>Asset</th><th>Task</th><th>Type</th><th>Est. Duration</th><th>Tech</th><th>Parts</th></tr></thead><tbody id="mp-tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ── ROOT CAUSE AI ── -->
+  <div class="page" id="page-rca">
+    <div class="phead">
+      <div><div class="ptitle">Root Cause Analysis</div><div class="psub">SHAP explainability · Bayesian fault tree · AI diagnostic summary</div></div>
+      <div class="acts">
+        <div id="rca-sel" style="display:flex;gap:6px"></div>
+        <button class="btn btn-p">↓ Export Report</button>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><div class="ph2">SHAP Feature Contributions</div><div class="ptag">Model explainability</div></div>
+        <div class="pb" id="shap-wrap"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Fault Tree</div><div class="ptag">Bayesian decomposition</div></div>
+        <div id="ft-wrap"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="ph2">AI Diagnostic Summary</div><div class="ptag">Reasoning engine output</div></div>
+      <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="rca-summary"></div>
+    </div>
+  </div>
+
+  <!-- ── TREND ANALYSIS ── -->
+  <div class="page" id="page-trend">
+    <div class="phead">
+      <div><div class="ptitle">Trend Analysis</div><div class="psub">Multi-asset cross-correlation · anomaly detection · FFT spectrum</div></div>
+      <div class="acts"><div class="trend-chips" id="trend-chips"></div></div>
+    </div>
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><div class="ph2">Multi-Asset Health Trend</div><div class="ptag">30-day window</div></div>
+        <div style="height:200px;padding:10px 14px"><canvas id="trend-chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Vibration FFT Spectrum</div><div class="ptag">Frequency analysis</div></div>
+        <div style="height:200px;padding:10px 14px"><canvas id="fft-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><div class="ph2">Sensor Correlation Matrix</div><div class="ptag">Cross-correlation coefficients</div></div>
+        <div style="padding:14px" id="corr-matrix"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div class="ph2">Anomaly Timeline</div><div class="ptag">Last 14 days · all assets</div></div>
+        <div style="height:200px;padding:10px 14px"><canvas id="anom-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ═══ ADD ASSET MODAL ═══ -->
+<div class="modal-backdrop" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Add New Asset</div>
+        <div class="modal-sub">Register asset into NexusTwin monitoring</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="asset-preview" id="modal-preview">
+        <div class="ap-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#00C8F0" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M8 5v6"/></svg></div>
+        <div><div class="ap-id" id="prev-id">ASSET-ID</div><div class="ap-name" id="prev-name">Asset Name</div><div class="ap-type" id="prev-type">Select type below</div></div>
+      </div>
+      <div class="form-row">
+        <div class="fgroup">
+          <label class="flabel">Asset Name</label>
+          <input class="finput" id="f-name" placeholder="e.g. CNC Mill #14" oninput="updatePreview()"/>
+        </div>
+        <div class="fgroup">
+          <label class="flabel">Asset ID</label>
+          <input class="finput" id="f-id" placeholder="e.g. CNC-14" oninput="updatePreview()"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fgroup">
+          <label class="flabel">Asset Type</label>
+          <select class="fselect" id="f-type" onchange="updatePreview()">
+            <option value="">Select type…</option>
+            <option>CNC Machine</option>
+            <option>Robotic Arm</option>
+            <option>Conveyor System</option>
+            <option>Hydraulic Pump</option>
+            <option>Electric Motor</option>
+            <option>Compressor</option>
+            <option>Heat Exchanger</option>
+            <option>PLC Controller</option>
+            <option>Custom</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label class="flabel">Plant Zone</label>
+          <select class="fselect" id="f-zone">
+            <option>Zone A3</option>
+            <option>Zone B1</option>
+            <option>Zone B2</option>
+            <option>Zone C4</option>
+            <option>Zone D1</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fgroup">
+          <label class="flabel">Manufacturer</label>
+          <input class="finput" id="f-mfr" placeholder="e.g. Siemens, Fanuc"/>
+        </div>
+        <div class="fgroup">
+          <label class="flabel">Install Date</label>
+          <input class="finput" id="f-date" type="date"/>
+        </div>
+      </div>
+      <div class="fgroup full">
+        <label class="flabel">Sensor Config</label>
+        <select class="fselect" id="f-sensors">
+          <option>Full package (vibration, temp, acoustic, current, flow)</option>
+          <option>Mechanical (vibration + acoustic)</option>
+          <option>Thermal (temperature + flow)</option>
+          <option>Electrical (current + voltage)</option>
+          <option>Custom configuration</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-o" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="submitAsset()">Register Asset →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════
+   GLOBAL DATA
+════════════════════════════════ */
+let ASSETS = [
+  {id:'CNC-07',name:'CNC Mill #7',    type:'CNC Machine',     rul:6, health:42,status:'crit',zone:'A3',mfr:'Fanuc'},
+  {id:'ROB-03',name:'Robot Arm 3',    type:'Robotic Arm',     rul:14,health:68,status:'warn',zone:'A3',mfr:'KUKA'},
+  {id:'CNV-01',name:'Conveyor A1',    type:'Conveyor System', rul:45,health:88,status:'ok',  zone:'B1',mfr:'Bosch'},
+  {id:'PMP-09',name:'Hydraulic Pump', type:'Hydraulic Pump',  rul:22,health:74,status:'warn',zone:'B2',mfr:'Parker'},
+  {id:'CNC-12',name:'CNC Mill #12',   type:'CNC Machine',     rul:58,health:91,status:'ok',  zone:'A3',mfr:'Fanuc'},
+  {id:'MOT-05',name:'Drive Motor 5',  type:'Electric Motor',  rul:71,health:95,status:'ok',  zone:'C4',mfr:'Siemens'},
+  {id:'CMP-02',name:'Compressor 2',   type:'Compressor',      rul:33,health:82,status:'ok',  zone:'B2',mfr:'Atlas Copco'},
+  {id:'ROB-07',name:'Robot Arm 7',    type:'Robotic Arm',     rul:64,health:93,status:'ok',  zone:'C4',mfr:'ABB'},
+  {id:'HEX-01',name:'Heat Exchanger', type:'Heat Exchanger',  rul:41,health:86,status:'ok',  zone:'D1',mfr:'Alfa Laval'},
+];
+
+const SENSORS = [
+  {name:'Vibration (X)',unit:'g',   base:1.4,  noise:.18, color:'#00C8F0'},
+  {name:'Temp — Bearing',unit:'°C', base:68,   noise:1.8, color:'#F59500'},
+  {name:'Acoustic Emis.', unit:'dB',base:74,   noise:2.5, color:'#00E8A0'},
+  {name:'Spindle Current',unit:'A', base:14.2, noise:.6,  color:'#9B7FFF'},
+  {name:'Coolant Flow',   unit:'L/m',base:8.4, noise:.3,  color:'#00C8F0'},
+];
+
+let ALERTS_DATA = [
+  {id:'ALT-001',type:'crit',msg:'CNC-07 bearing inner-race wear detected — RUL 6 days',asset:'CNC-07',time:'2 min ago',ack:false},
+  {id:'ALT-002',type:'warn',msg:'ROB-03 joint torque variance exceeding 18% threshold',asset:'ROB-03',time:'11 min ago',ack:false},
+  {id:'ALT-003',type:'warn',msg:'PMP-09 suction pressure dropping — cavitation risk',asset:'PMP-09',time:'34 min ago',ack:false},
+  {id:'ALT-004',type:'info',msg:'CMP-02 maintenance window confirmed for Day 33',asset:'CMP-02',time:'1h ago',ack:true},
+  {id:'ALT-005',type:'info',msg:'AI model retrained — accuracy improved +1.3%',asset:'System',time:'3h ago',ack:true},
+];
+
+const WO = {
+  open:[
+    {id:'WO-2214',title:'Replace bearing pack B-7209',asset:'CNC-07',p:'cc',pl:'Critical',due:'Jun 21',tech:'RK'},
+    {id:'WO-2215',title:'Inspect hydraulic inlet filter',asset:'PMP-09',p:'cw',pl:'High',due:'Jun 26',tech:'SP'},
+  ],
+  inprog:[
+    {id:'WO-2210',title:'Joint 4 gear assembly inspection',asset:'ROB-03',p:'cw',pl:'High',due:'Jun 28',tech:'AK'},
+    {id:'WO-2211',title:'Compressor valve V2 replacement',asset:'CMP-02',p:'ci',pl:'Medium',due:'Jul 2',tech:'TM'},
+  ],
+  done:[
+    {id:'WO-2204',title:'Belt tension adjustment A1',asset:'CNV-01',p:'ct',pl:'Low',due:'Jun 14',tech:'SP'},
+    {id:'WO-2206',title:'Motor 5 thermal paste reapplication',asset:'MOT-05',p:'ct',pl:'Low',due:'Jun 12',tech:'RK'},
+  ]
+};
+
+const CAL_EVENTS = {
+  5:[{l:'CNC-07',cls:'ev-c'}],
+  12:[{l:'ROB-03',cls:'ev-w'},{l:'PMP-09',cls:'ev-w'}],
+  18:[{l:'CMP-02',cls:'ev-m'}],
+  21:[{l:'CNV-01',cls:'ev-m'}],24:[{l:'MOT-05',cls:'ev-m'}],28:[{l:'ROB-07',cls:'ev-m'}],30:[{l:'HEX-01',cls:'ev-m'}]
+};
+
+/* ════════════════════════════════
+   NAV SETUP
+════════════════════════════════ */
+const PAGES = [
+  {id:'overview',   label:'Overview',     section:'Monitor'},
+  {id:'twins',      label:'Digital Twins',section:'Monitor'},
+  {id:'sensors',    label:'Sensor Streams',section:'Monitor'},
+  {id:'alerts',     label:'Alerts',       section:'Monitor', badge:true},
+  {id:'rul',        label:'RUL Forecasts',section:'Predict'},
+  {id:'workorders', label:'Work Orders',  section:'Predict'},
+  {id:'maintplan',  label:'Maint. Plan',  section:'Predict'},
+  {id:'rca',        label:'Root Cause AI',section:'Analyse'},
+  {id:'trend',      label:'Trend Analysis',section:'Analyse'},
+];
+
+const NAV_ICONS = {
+  overview:'<rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.5"/>',
+  twins:'<circle cx="8" cy="8" r="6.5"/><path d="M5 8h6M8 5v6"/>',
+  sensors:'<path d="M2 12V10l3.5-4L8 9l2.5-6L14 9v3"/>',
+  alerts:'<path d="M8 1.5L1.5 14.5h13z"/><path d="M8 6v4M8 11.5v.5"/>',
+  rul:'<path d="M1.5 12L5 7l3 3 2.5-5 4 5"/>',
+  workorders:'<rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 3V1.5M11 3V1.5M2 7h12M5.5 10h5"/>',
+  maintplan:'<rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M5 4V2.5M11 4V2.5M2 7.5h12"/>',
+  rca:'<circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/>',
+  trend:'<path d="M2 13L5.5 7 8 10l3-7 3 3"/>',
+};
+
+let currentPage = 'overview';
+
+function buildNav() {
+  const sb = document.getElementById('sidebar');
+  let lastSection = '';
+  PAGES.forEach(p => {
+    if (p.section !== lastSection) {
+      sb.innerHTML += `<div class="sb-sec"><div class="sb-lbl">${p.section}</div></div>`;
+      lastSection = p.section;
+    }
+    const lastSec = sb.lastElementChild;
+    const ni = document.createElement('div');
+    ni.className = 'ni' + (p.id === 'overview' ? ' on' : '');
+    ni.dataset.page = p.id;
+    const activeBadgeCount = ALERTS_DATA.filter(a => !a.ack).length;
+    ni.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">${NAV_ICONS[p.id]}</svg>${p.label}${p.badge ? `<div class="nb" id="nb-alerts">${activeBadgeCount}</div>` : ''}`;
+    ni.addEventListener('click', () => navigate(p.id));
+    lastSec.appendChild(ni);
+  });
+
+  // Top segmented control for quick jumps
+  const segs = document.getElementById('tb-segs');
+  ['Overview','Twins','Sensors','Alerts'].forEach((l,i) => {
+    const b = document.createElement('div');
+    b.className = 'tb-seg' + (i===0?' on':'');
+    b.textContent = l;
+    b.dataset.page = ['overview','twins','sensors','alerts'][i];
+    b.addEventListener('click', () => navigate(b.dataset.page));
+    segs.appendChild(b);
+  });
+}
+
+function navigate(pageId) {
+  currentPage = pageId;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.getElementById('page-' + pageId)?.classList.add('on');
+  document.querySelectorAll('.ni').forEach(n => n.classList.toggle('on', n.dataset.page === pageId));
+  document.querySelectorAll('.tb-seg').forEach(s => s.classList.toggle('on', s.dataset.page === pageId));
+  initPage(pageId);
+}
+
+function initPage(id) {
+  const fns = {
+    overview: initOverview,
+    twins: initTwins,
+    sensors: initSensors,
+    alerts: initAlerts,
+    rul: initRUL,
+    workorders: initKanban,
+    maintplan: initCalendar,
+    rca: initRCA,
+    trend: initTrend,
+  };
+  fns[id]?.();
+}
+
+/* ════════════════════════════════
+   CLOCK & OEE
+════════════════════════════════ */
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', {hour12:false});
+  if (Math.random() > .85) {
+    const oee = (90.5 + Math.random() * 2.4).toFixed(1);
+    const el = document.getElementById('oee-val');
+    if (el) el.textContent = oee + '%';
+  }
+}, 1000);
+
+/* ════════════════════════════════
+   REAL-TIME TICKER
+════════════════════════════════ */
+function buildTicker() {
+  const items = [
+    {l:'OEE',v:'91.4%',c:'var(--teal)'},
+    {l:'Active Alerts',v:'3',c:'var(--red)'},
+    {l:'Assets Online',v:'12/12',c:'var(--cyan)'},
+    {l:'Avg Health',v:'84%',c:'var(--teal)'},
+    {l:'Vibration RMS',v:'1.4g',c:'var(--cyan)'},
+    {l:'Bearing Temp',v:'68°C',c:'var(--amber)'},
+    {l:'Energy Usage',v:'284 kW',c:'var(--purple)'},
+    {l:'CNC-07 RUL',v:'6d ⚠',c:'var(--red)'},
+    {l:'Throughput',v:'98.2%',c:'var(--teal)'},
+    {l:'MTBF',v:'412h',c:'var(--cyan)'},
+    {l:'MTTR',v:'2.1h',c:'var(--amber)'},
+    {l:'PM Compliance',v:'94%',c:'var(--teal)'},
+  ];
+  const doubled = [...items,...items];
+  const el = document.getElementById('rt-ticker');
+  el.innerHTML = doubled.map(it => `<div class="rt-item"><span class="rt-label">${it.l}</span><span class="rt-val" style="color:${it.c}">${it.v}</span></div>`).join('');
+
+  // Update ticker values every 3s
+  setInterval(() => {
+    const vals = el.querySelectorAll('.rt-val');
+    vals.forEach((v,i) => {
+      const idx = i % items.length;
+      if (idx === 0) v.textContent = (90 + Math.random()*3).toFixed(1) + '%';
+      if (idx === 4) v.textContent = (1.2 + Math.random()*.5).toFixed(2) + 'g';
+      if (idx === 5) v.textContent = (65 + Math.random()*8).toFixed(0) + '°C';
+      if (idx === 7) v.textContent = (4 + Math.random()*3).toFixed(0) + 'd ⚠';
+    });
+  }, 3000);
+}
+
+/* ════════════════════════════════
+   OVERVIEW
+════════════════════════════════ */
+let selAsset = 0;
+const sHist = SENSORS.map(() => Array(60).fill(0));
+const sCanvCtxs = [];
+let ovChart = null;
+let ovInitDone = false;
+
+function initOverview() {
+  buildKPIRow();
+  buildAssetGrid();
+  if (!ovInitDone) {
+    buildOvSensors();
+    buildOvAlerts();
+    buildMaintTable();
+    buildOvChart();
+    ovInitDone = true;
+  }
+  updateOvSub();
+}
+
+function updateOvSub() {
+  const act = ASSETS.filter(a=>a.status!=='ok').length;
+  document.getElementById('ov-sub').textContent = `${ASSETS.length} assets monitored · ${act} need attention`;
+}
+
+function buildKPIRow() {
+  const row = document.getElementById('kpi-row');
+  const crit = ASSETS.filter(a=>a.status==='crit').length;
+  const warn = ASSETS.filter(a=>a.status==='warn').length;
+  const avgH = Math.round(ASSETS.reduce((s,a)=>s+a.health,0)/ASSETS.length);
+  const avgRUL = Math.round(ASSETS.reduce((s,a)=>s+a.rul,0)/ASSETS.length);
+  const activeAlerts = ALERTS_DATA.filter(a=>!a.ack).length;
+  row.innerHTML = `
+    <div class="kpi c"><div class="kl">Assets Live</div><div class="kv"><span id="kv1">${ASSETS.length}</span></div><div class="kd up">↑ 100% online</div><div class="kbar"><div class="kbf" style="width:100%;background:linear-gradient(90deg,var(--cyan),var(--teal))"></div></div></div>
+    <div class="kpi t"><div class="kl">Avg Health</div><div class="kv"><span id="kv2">${avgH}</span><span class="ku">/ 100</span></div><div class="kd up">↑ 3pts this week</div><div class="kbar"><div class="kbf" style="width:${avgH}%;background:linear-gradient(90deg,var(--teal),#00c0a0)"></div></div></div>
+    <div class="kpi a"><div class="kl">Avg RUL</div><div class="kv"><span id="kv3">${avgRUL}</span><span class="ku">days</span></div><div class="kd wa">${crit} critical &lt;7d</div><div class="kbar"><div class="kbf" style="width:${Math.round(avgRUL/90*100)}%;background:linear-gradient(90deg,var(--amber),#e07000)"></div></div></div>
+    <div class="kpi r"><div class="kl">Active Alerts</div><div class="kv"><span id="kv4">${activeAlerts}</span></div><div class="kd dn">${crit+warn} assets at risk</div><div class="kbar"><div class="kbf" style="width:${activeAlerts/10*100}%;background:linear-gradient(90deg,var(--red),var(--purple))"></div></div></div>
+  `;
+}
+
+function buildAssetGrid() {
+  const g = document.getElementById('asset-grid'); g.innerHTML = '';
+  ASSETS.forEach((a,i) => {
+    const pct = Math.round((a.rul/90)*100);
+    const fc = a.rul<14?'rl':a.rul<30?'rm':'rh';
+    const d = document.createElement('div');
+    d.className = 'at' + (i===selAsset?' sel':'');
+    d.innerHTML = `<div class="at-top"><div class="at-id">${a.id}</div><div class="dot ${a.status}"></div></div><div class="at-name">${a.name}</div><div class="at-type">${a.type}</div><div class="rul-row"><span>RUL</span><span>${a.rul}d</span></div><div class="rbar"><div class="rf ${fc}" style="width:${pct}%"></div></div>`;
+    d.addEventListener('click', () => { selAsset=i; buildAssetGrid(); updateInsight(); });
+    g.appendChild(d);
+  });
+  document.getElementById('sel-lbl').textContent = `${ASSETS[selAsset].id} · ${ASSETS[selAsset].status.toUpperCase()}`;
+}
+
+function buildOvSensors() {
+  const list = document.getElementById('ov-sensors'); list.innerHTML = ''; sCanvCtxs.length = 0;
+  SENSORS.forEach((s,i) => {
+    const row = document.createElement('div'); row.className = 'sr';
+    const canvas = document.createElement('canvas'); canvas.className = 'sc'; canvas.width = 200; canvas.height = 26;
+    row.innerHTML = `<div class="sn">${s.name}</div>`;
+    const track = document.createElement('div'); track.className = 'st'; track.appendChild(canvas);
+    const val = document.createElement('div'); val.className = 'sv'; val.id = `osv-${i}`; val.textContent = s.base.toFixed(1);
+    const unit = document.createElement('div'); unit.className = 'su'; unit.textContent = s.unit;
+    row.appendChild(track); row.appendChild(val); row.appendChild(unit);
+    list.appendChild(row);
+    sCanvCtxs.push(canvas.getContext('2d'));
+  });
+}
+
+const INSIGHTS = [
+  '<strong>AI insight:</strong> Sub-harmonic vibration at 47 Hz rising 12% over 48h. Bearing inner-race wear pattern confirmed. <strong>RUL: 6 days</strong> — schedule replacement within 72h to prevent catastrophic failure.',
+  '<strong>AI insight:</strong> ROB-03 joint 4 torque shows 18% variance vs baseline. Gear backlash consistent with gradual wear. <strong>Inspect gear assembly within 12 days.</strong>',
+  '<strong>AI insight:</strong> CNV-01 belt elongation 2.8mm above spec. Tension drift rate within normal bounds. <strong>Low risk — monitor bi-weekly.</strong>',
+  '<strong>AI insight:</strong> PMP-09 suction pressure down 8% over 5 days. Inlet restriction likely causing cavitation onset. <strong>Inspect filter before Day 22.</strong>',
+];
+
+function updateInsight() {
+  const el = document.getElementById('ai-insight');
+  if (el) el.innerHTML = INSIGHTS[Math.min(selAsset, INSIGHTS.length-1)];
+}
+
+function buildOvAlerts() {
+  const f = document.getElementById('ov-alert-list'); f.innerHTML = '';
+  ALERTS_DATA.slice(0,5).forEach(a => {
+    const tc = a.type==='crit'?'cc':a.type==='warn'?'cw':'ci';
+    const d = document.createElement('div'); d.className = 'af-row';
+    d.innerHTML = `<div class="af-dot ${a.type==='crit'?'crit':a.type==='warn'?'warn':'ok'}"></div><div><div class="af-msg">${a.msg}</div><div class="af-meta"><span class="chip ${tc}">${a.type}</span><span>${a.asset}</span><span>${a.time}</span></div></div>`;
+    f.appendChild(d);
+  });
+  const active = ALERTS_DATA.filter(x=>!x.ack).length;
+  const ptag = document.getElementById('af-ptag');
+  if (ptag) ptag.textContent = `Live · ${active} active`;
+}
+
+function buildMaintTable() {
+  const tbody = document.getElementById('maint-tbody'); tbody.innerHTML = '';
+  const data = [
+    {a:'CNC-07',n:'CNC Mill #7',f:'Bearing inner-race wear',rul:6,rc:'rl',p:'Critical',pc:'cc',act:'Replace bearing B-7209',conf:96,s:'In 5 days'},
+    {a:'ROB-03',n:'Robot Arm 3',f:'Joint torque anomaly',rul:14,rc:'rm',p:'High',pc:'cw',act:'Inspect gear assembly J4',conf:89,s:'In 12 days'},
+    {a:'PMP-09',n:'Hydraulic Pump',f:'Cavitation onset',rul:22,rc:'rm',p:'High',pc:'cw',act:'Check inlet filter',conf:83,s:'In 20 days'},
+    {a:'CMP-02',n:'Compressor 2',f:'Valve leakage — stage 2',rul:33,rc:'rm',p:'Medium',pc:'ci',act:'Replace valve V2',conf:81,s:'In 30 days'},
+    {a:'CNV-01',n:'Conveyor A1',f:'Belt elongation drift',rul:45,rc:'rh',p:'Medium',pc:'ci',act:'Tension adjustment',conf:78,s:'In 40 days'},
+  ];
+  data.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="mono cy">${m.a}</span><br><span class="dim" style="font-size:9px">${m.n}</span></td><td>${m.f}</td><td><span class="mono ${m.rc}">${m.rul}d</span></td><td><span class="chip ${m.pc}">${m.p}</span></td><td>${m.act}</td><td><span class="mono" style="color:var(--teal)">${m.conf}%</span></td><td class="dim">${m.s}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildOvChart() {
+  const ctx = document.getElementById('ov-chart'); if(!ctx) return;
+  if (ovChart) { ovChart.destroy(); ovChart = null; }
+  const days = Array.from({length:30},(_,i)=>i-15);
+  const labels = days.map(d=>d===0?'Today':d>0?`+${d}d`:`${d}d`);
+  const actual = days.map(d=>d<0?Math.max(0,0.98-Math.abs(d)*0.007+Math.random()*.012):null);
+  const pred = days.map(d=>d>=0?Math.max(0,0.98-(d+15)*0.007+(Math.random()-.5)*.008):null);
+  ovChart = new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Actual',data:actual,borderColor:'#00E8A0',borderWidth:1.5,pointRadius:0,tension:.4,fill:false},
+      {label:'Predicted',data:pred,borderColor:'#00C8F0',borderDash:[5,3],borderWidth:1.5,pointRadius:0,tension:.4,fill:false},
+      {label:'Threshold',data:days.map(()=>0.4),borderColor:'rgba(255,53,96,.4)',borderDash:[2,4],borderWidth:1,pointRadius:0},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#07111E',titleColor:'#BFD0E8',bodyColor:'#567090',borderColor:'rgba(0,200,240,.18)',borderWidth:1}},
+      scales:{x:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},maxTicksLimit:8}},
+              y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},callback:v=>Math.round(v*100)+'%'},min:0,max:1.05}}}
+  });
+}
+
+/* ════════════════════════════════
+   3D DIGITAL TWINS (Three.js)
+════════════════════════════════ */
+let threeRenderer=null, threeScene=null, threeCamera=null;
+let twinMeshGroup=null, twinAnimId=null;
+let autoRotate=true, isWireframe=false;
+let activeTwin=0;
+let twinStatCharts=[];
+
+function initTwins() {
+  buildTwinSelectors();
+  buildTwinStats();
+  buildTwinLog();
+  buildThermalChart();
+  if (!threeRenderer) setupThreeJS();
+  else rebuildTwinModel();
+}
+
+function buildTwinSelectors() {
+  const wrap = document.getElementById('twin-selectors'); wrap.innerHTML = '';
+  ASSETS.forEach((a,i) => {
+    const d = document.createElement('div');
+    d.className = 'twin-selector' + (i===activeTwin?' atv':'');
+    const color = a.status==='crit'?'var(--red)':a.status==='warn'?'var(--amber)':'var(--teal)';
+    d.innerHTML = `<div class="ts-id mono">${a.id}</div><div class="ts-name">${a.name}</div><div class="ts-rul" style="color:${color}">RUL: ${a.rul}d · Health: ${a.health}%</div>`;
+    d.addEventListener('click', () => { activeTwin=i; buildTwinSelectors(); buildTwinStats(); buildTwinLog(); rebuildTwinModel(); updateHUD(); });
+    wrap.appendChild(d);
+  });
+}
+
+function updateHUD() {
+  const a = ASSETS[activeTwin];
+  const color = a.status==='crit'?'#FF3560':a.status==='warn'?'#F59500':'#00E8A0';
+  document.getElementById('twin-hud').innerHTML = `
+    <div class="hud-badge" style="border-color:${color}44;color:${color}">● TWIN SYNC — ${a.id}</div>
+    <div class="hud-badge">Health: ${a.health}%  |  RUL: ${a.rul}d</div>
+    <div class="hud-badge">FEM v2.4 · ${new Date().toLocaleTimeString('en-GB',{hour12:false})}</div>
+  `;
+}
+
+function setupThreeJS() {
+  const canvas = document.getElementById('three-canvas');
+  threeRenderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  threeRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  threeRenderer.shadowMap.enabled = true;
+  threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(0x0C1A2E);
+  threeScene.fog = new THREE.FogExp2(0x0C1A2E, 0.04);
+
+  threeCamera = new THREE.PerspectiveCamera(45, canvas.clientWidth/canvas.clientHeight, 0.1, 100);
+  threeCamera.position.set(4, 3, 5);
+  threeCamera.lookAt(0,0,0);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0x1a2a3a, 1.5);
+  threeScene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0x00C8F0, 2);
+  dirLight.position.set(5,8,5);
+  dirLight.castShadow = true;
+  threeScene.add(dirLight);
+  const pointLight = new THREE.PointLight(0x00E8A0, 1.5, 20);
+  pointLight.position.set(-3,4,0);
+  threeScene.add(pointLight);
+  const rimLight = new THREE.PointLight(0xF59500, 0.8, 15);
+  rimLight.position.set(0,-2,-4);
+  threeScene.add(rimLight);
+
+  // Grid floor
+  const gridHelper = new THREE.GridHelper(10, 20, 0x1E3050, 0x1E3050);
+  threeScene.add(gridHelper);
+
+  // Mouse rotate
+  let isDragging = false, prevMX = 0, prevMY = 0;
+  canvas.addEventListener('mousedown', e => { isDragging=true; prevMX=e.clientX; prevMY=e.clientY; autoRotate=false; });
+  window.addEventListener('mouseup', () => isDragging=false);
+  canvas.addEventListener('mousemove', e => {
+    if (!isDragging || !twinMeshGroup) return;
+    twinMeshGroup.rotation.y += (e.clientX-prevMX)*0.01;
+    twinMeshGroup.rotation.x += (e.clientY-prevMY)*0.005;
+    twinMeshGroup.rotation.x = Math.max(-0.5, Math.min(0.8, twinMeshGroup.rotation.x));
+    prevMX=e.clientX; prevMY=e.clientY;
+  });
+  canvas.addEventListener('wheel', e => {
+    threeCamera.position.z = Math.max(2, Math.min(10, threeCamera.position.z + e.deltaY*0.01));
+  });
+
+  rebuildTwinModel();
+  updateHUD();
+  animateTwin();
+
+  window.addEventListener('resize', () => {
+    if (!threeRenderer) return;
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    threeRenderer.setSize(w,h,false);
+    threeCamera.aspect=w/h;
+    threeCamera.updateProjectionMatrix();
+  });
+}
+
+function rebuildTwinModel() {
+  if (!threeScene) return;
+  if (twinMeshGroup) threeScene.remove(twinMeshGroup);
+  twinMeshGroup = new THREE.Group();
+  const a = ASSETS[activeTwin];
+  const color = a.status==='crit'?0xFF3560:a.status==='warn'?0xF59500:0x00E8A0;
+  const mat = (c,emit=0) => new THREE.MeshStandardMaterial({color:c,metalness:.7,roughness:.25,emissive:new THREE.Color(c).multiplyScalar(emit),wireframe:isWireframe});
+  const steelMat = mat(0x1E3050);
+  const accentMat = mat(color, 0.15);
+  const darkMat = mat(0x0C1A2E);
+
+  const type = a.type;
+
+  if (type === 'CNC Machine') {
+    // Base
+    const base = new THREE.Mesh(new THREE.BoxGeometry(3,0.3,2.5), steelMat); base.position.y=-0.5; base.castShadow=true; twinMeshGroup.add(base);
+    // Column
+    const col = new THREE.Mesh(new THREE.BoxGeometry(0.8,2.5,0.8), mat(0x253A60)); col.position.set(-1,0.8,0); col.castShadow=true; twinMeshGroup.add(col);
+    // Cross rail
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(2.4,0.25,0.35), mat(0x2a4060)); rail.position.set(0.1,2,0); twinMeshGroup.add(rail);
+    // Spindle
+    const spindle = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,1.2,12), mat(0x304560)); spindle.position.set(0.3,1.4,0); twinMeshGroup.add(spindle);
+    const spindleTip = new THREE.Mesh(new THREE.ConeGeometry(0.12,0.4,12), accentMat); spindleTip.position.set(0.3,0.6,0); twinMeshGroup.add(spindleTip);
+    // Table
+    const table = new THREE.Mesh(new THREE.BoxGeometry(2,0.12,1.6), mat(0x304060)); table.position.set(0.3,-0.2,0); twinMeshGroup.add(table);
+    // Workpiece
+    const wp = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.25,0.5), accentMat); wp.position.set(0.3,0,0); twinMeshGroup.add(wp);
+    // Bolts
+    for (let i=0;i<4;i++) {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.35,8), mat(0x567090));
+      bolt.position.set(0.3+(.5*(i%2-.5)*1.4), -0.1, .5*(Math.floor(i/2)-.5)*1.2);
+      twinMeshGroup.add(bolt);
+    }
+    // Emissive accent lines on base
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(3,.04,2.5), accentMat); edge.position.y=-0.33; twinMeshGroup.add(edge);
+
+  } else if (type === 'Robotic Arm') {
+    const jointMat = mat(0x253A60);
+    const segments = [
+      {pos:[0,-0.4,0],size:[0.4,0.5,0.4]},
+    ];
+    // Base plate
+    twinMeshGroup.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,.25,24), steelMat), {position:new THREE.Vector3(0,-0.7,0)}));
+    // Rotary base
+    twinMeshGroup.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.4,18), jointMat), {position:new THREE.Vector3(0,-.3,0)}));
+    // Arm links
+    const link1 = new THREE.Group(); link1.position.set(0,0,0); link1.rotation.z = -0.4;
+    const l1m = new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,.9,12), mat(0x2a4060)); l1m.position.y=.45; link1.add(l1m);
+    const j1 = new THREE.Mesh(new THREE.SphereGeometry(.18,16,12), accentMat); j1.position.y=.9; link1.add(j1);
+    const link2 = new THREE.Group(); link2.position.y=0.9; link2.rotation.z=0.6;
+    const l2m = new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.8,12), mat(0x304060)); l2m.position.y=.4; link2.add(l2m);
+    const j2 = new THREE.Mesh(new THREE.SphereGeometry(.14,16,12), accentMat); j2.position.y=.8; link2.add(j2);
+    const link3 = new THREE.Group(); link3.position.y=0.8; link3.rotation.z=-0.3;
+    const l3m = new THREE.Mesh(new THREE.CylinderGeometry(.05,.08,.5,10), mat(0x253A60)); l3m.position.y=.25; link3.add(l3m);
+    const gripper1 = new THREE.Mesh(new THREE.BoxGeometry(.06,.25,.04), accentMat); gripper1.position.set(.08,.56,0); link3.add(gripper1);
+    const gripper2 = new THREE.Mesh(new THREE.BoxGeometry(.06,.25,.04), accentMat); gripper2.position.set(-.08,.56,0); link3.add(gripper2);
+    link2.add(link3); link1.add(link2); twinMeshGroup.add(link1);
+
+  } else if (type === 'Conveyor System') {
+    // Frame
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(3.5,.08,1.2), mat(0x253A60)); frame.position.y=-.1; twinMeshGroup.add(frame);
+    // Rollers
+    for (let i=0;i<8;i++) {
+      const r = new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.2,16), mat(0x304060));
+      r.rotation.x=Math.PI/2; r.position.set(-1.5+i*.5,0,0); twinMeshGroup.add(r);
+    }
+    // Belt surface
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(3.5,.05,1.0), mat(0x1E2840,0.02)); belt.position.y=.12; twinMeshGroup.add(belt);
+    // Belt accent stripes
+    for (let i=0;i<7;i++) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(.04,.06,.9), accentMat); stripe.position.set(-1.5+i*.5,.14,0); twinMeshGroup.add(stripe);
+    }
+    // Side rails
+    [-0.62,0.62].forEach(z => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(3.5,.3,.06), mat(0x1E3050)); rail.position.set(0,.02,z); twinMeshGroup.add(rail);
+    });
+    // Legs
+    [[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]].forEach(([x,z]) => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(.08,.6,.08), steelMat); leg.position.set(x,-.4,z*.3); twinMeshGroup.add(leg);
+    });
+
+  } else if (type === 'Hydraulic Pump') {
+    // Main cylinder
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.5,.55,1.8,24), mat(0x253A60)); cyl.castShadow=true; twinMeshGroup.add(cyl);
+    // Head
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.3,24), accentMat); head.position.y=1.05; twinMeshGroup.add(head);
+    // Port pipes
+    [[.4,.6,0],[-.4,.6,0],[0,.6,.4],[0,.6,-.4]].forEach(([x,y,z]) => {
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,10), mat(0x304060));
+      pipe.position.set(x,y,z); pipe.lookAt(x*2,y+.2,z*2); twinMeshGroup.add(pipe);
+    });
+    // Base flange
+    const flange = new THREE.Mesh(new THREE.CylinderGeometry(.7,.7,.12,24), steelMat); flange.position.y=-.96; twinMeshGroup.add(flange);
+    // Bolts around flange
+    for(let i=0;i<8;i++){
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.18,8), accentMat);
+      const ang = (i/8)*Math.PI*2;
+      bolt.position.set(Math.cos(ang)*.6, -.96, Math.sin(ang)*.6);
+      twinMeshGroup.add(bolt);
+    }
+    // Shaft
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.4,12), mat(0x567090)); shaft.position.set(0,-1.1,0); twinMeshGroup.add(shaft);
+
+  } else if (type === 'Electric Motor') {
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,2,24), mat(0x253A60)); cyl.rotation.z=Math.PI/2; twinMeshGroup.add(cyl);
+    // End caps
+    [-1,1].forEach(side => {
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.15,24), accentMat); cap.rotation.z=Math.PI/2; cap.position.x=side*1.07; twinMeshGroup.add(cap);
+    });
+    // Fins
+    for(let i=0;i<12;i++){
+      const ang=(i/12)*Math.PI*2, fin=new THREE.Mesh(new THREE.BoxGeometry(1.8,.06,.04), mat(0x304060));
+      fin.rotation.x=ang; fin.position.set(0,Math.cos(ang)*.62,Math.sin(ang)*.62); twinMeshGroup.add(fin);
+    }
+    // Shaft
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.5,12), mat(0x567090)); shaft.rotation.z=Math.PI/2; shaft.position.x=1.35; twinMeshGroup.add(shaft);
+    // Terminal box
+    const tbox = new THREE.Mesh(new THREE.BoxGeometry(.4,.35,.6), steelMat); tbox.position.set(.2,.7,0); twinMeshGroup.add(tbox);
+    // Mounting feet
+    [[-0.7,-0.7],[0.7,-0.7],[-0.7,0.7],[0.7,0.7]].forEach(([x,z]) => {
+      const foot=new THREE.Mesh(new THREE.BoxGeometry(.25,.12,.25),mat(0x1E3050)); foot.position.set(x,-.65,z*.5); twinMeshGroup.add(foot);
+    });
+
+  } else {
+    // Generic machine
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2,1.6,1.4), mat(0x253A60)); body.castShadow=true; twinMeshGroup.add(body);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(1.8,1,1.41), mat(0x0C1A2E)); panel.position.z=.01; twinMeshGroup.add(panel);
+    const screen = new THREE.Mesh(new THREE.BoxGeometry(.8,.5,1.42), mat(color,0.2)); screen.position.set(0,.2,.02); twinMeshGroup.add(screen);
+    for (let i=0;i<3;i++) {
+      const btn = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.05,12), mat([0x00C8F0,0xF59500,0xFF3560][i],0.3));
+      btn.position.set(-.6+i*.25,-.2,1.42/2); twinMeshGroup.add(btn);
+    }
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.4,.18,1.6), steelMat); base.position.y=-.89; twinMeshGroup.add(base);
+    [[-0.9,-0.9],[0.9,-0.9],[-0.9,0.9],[0.9,0.9]].forEach(([x,z]) => {
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(.1,.3,.1),mat(0x1E3050)); leg.position.set(x,-.9,z*.6); twinMeshGroup.add(leg);
+    });
+  }
+
+  // Scanline effect (ring)
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.8,.015,8,64), mat(color,0.6));
+  ring.rotation.x=Math.PI/2;
+  ring.name='scanring';
+  twinMeshGroup.add(ring);
+
+  twinMeshGroup.traverse(m => {
+    if (m.isMesh) {
+      m.castShadow=true; m.receiveShadow=true;
+      if (isWireframe) m.material = new THREE.MeshStandardMaterial({color:color,wireframe:true,metalness:.6});
+    }
+  });
+
+  threeScene.add(twinMeshGroup);
+}
+
+function animateTwin() {
+  twinAnimId = requestAnimationFrame(animateTwin);
+  if (!threeRenderer || !threeScene) return;
+  if (autoRotate && twinMeshGroup) twinMeshGroup.rotation.y += 0.004;
+  // Scanline pulse
+  if (twinMeshGroup) {
+    const ring = twinMeshGroup.getObjectByName('scanring');
+    if (ring) {
+      ring.position.y = Math.sin(Date.now()*.0015)*1.5;
+      ring.material.opacity = .5+Math.sin(Date.now()*.003)*.3;
+      ring.material.transparent=true;
+    }
+  }
+  threeRenderer.render(threeScene, threeCamera);
+}
+
+window.resetCamera = () => { threeCamera.position.set(4,3,5); threeCamera.lookAt(0,0,0); autoRotate=true; };
+window.setWireframe = (wf) => { isWireframe=wf; rebuildTwinModel(); };
+window.toggleRotate = () => { autoRotate=!autoRotate; };
+window.syncAll = () => showToast('Sync', 'All twins synchronized', '✓');
+window.simulateFault = () => {
+  ASSETS[activeTwin].health = Math.max(10, ASSETS[activeTwin].health-15);
+  ASSETS[activeTwin].status = 'crit';
+  buildTwinSelectors(); buildTwinStats(); rebuildTwinModel(); updateHUD();
+  showToast('Fault Simulated', `${ASSETS[activeTwin].id} health degraded`, '⚠');
+};
+
+function buildTwinStats() {
+  const wrap = document.getElementById('twin-stats'); wrap.innerHTML = '';
+  const a = ASSETS[activeTwin];
+  const color = a.status==='crit'?'var(--red)':a.status==='warn'?'var(--amber)':'var(--teal)';
+  const params = [
+    {l:'Health Score',v:a.health,max:100,u:'%'},
+    {l:'Est. RUL',v:a.rul,max:90,u:'days'},
+    {l:'Vibration RMS',v:(1.2+Math.random()*.6).toFixed(2),max:5,u:'g'},
+    {l:'Bearing Temp',v:(62+Math.random()*14).toFixed(1),max:120,u:'°C'},
+  ];
+  params.forEach((p,i) => {
+    const pct = Math.round((+p.v/p.max)*100);
+    const c = pct<40?'var(--red)':pct<70?'var(--amber)':'var(--teal)';
+    const card = document.createElement('div'); card.className='ts-card';
+    card.innerHTML=`<div class="ts-param"><span class="ts-pl">${p.l}</span></div><div style="font-family:var(--fm);font-size:22px;font-weight:600;color:${c}">${p.v}<span style="font-size:11px;color:var(--textD);margin-left:3px">${p.u}</span></div><div class="ts-bar"><div class="ts-bf" style="width:${pct}%;background:${c}"></div></div><canvas id="ts-mc-${i}" style="height:50px;margin-top:7px"></canvas>`;
+    wrap.appendChild(card);
+    setTimeout(()=>{
+      const mc = document.getElementById(`ts-mc-${i}`);
+      if(!mc) return;
+      const data = Array.from({length:20},(_,j)=>(+p.v*(0.85+Math.random()*.3)));
+      new Chart(mc,{type:'line',data:{labels:data.map((_,j)=>j),datasets:[{data,borderColor:c,borderWidth:1.2,pointRadius:0,tension:.4,fill:true,backgroundColor:c+'18'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}});
+    },100);
+  });
+}
+
+function buildTwinLog() {
+  const log = document.getElementById('twin-log'); log.innerHTML = '';
+  const a = ASSETS[activeTwin];
+  const events = [
+    {t:now()+'',msg:`State sync — ${a.health} params updated`,c:'ok'},
+    {t:'-2s',msg:`RUL recalculated: ${a.rul+.2}→${a.rul}d`,c:'warn'},
+    {t:'-8s',msg:'Vibration anomaly pattern matched',c:'crit'},
+    {t:'-22s',msg:'Thermal model updated',c:'ok'},
+    {t:'-1m',msg:'AI inference completed in 11ms',c:'ok'},
+    {t:'-3m',msg:'Digital twin health check — all modules active',c:'ok'},
+  ];
+  events.forEach(e => {
+    const d=document.createElement('div'); d.className='tl-row';
+    d.innerHTML=`<div class="tl-dot ${e.c==='crit'?'crit':e.c==='warn'?'warn':'ok'}"></div><div style="flex:1"><div class="tl-msg">${e.msg}</div><div class="tl-time">${e.t}</div></div>`;
+    log.appendChild(d);
+  });
+}
+
+let thermalChart=null;
+function buildThermalChart() {
+  const ctx=document.getElementById('thermal-chart'); if(!ctx||thermalChart) return;
+  const zones=['Base','Spindle','Bearing','Tool','Coolant'];
+  const vals=[38,72,85,94,32];
+  thermalChart=new Chart(ctx,{type:'bar',data:{labels:zones,datasets:[{data:vals,backgroundColor:vals.map(v=>v>80?'rgba(255,53,96,.7)':v>60?'rgba(245,149,0,.7)':'rgba(0,200,240,.5)'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#567090',font:{size:9}}},y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:9},callback:v=>v+'°C'}}}}});
+}
+
+function now(){return new Date().toLocaleTimeString('en-GB',{hour12:false});}
+
+/* ════════════════════════════════
+   SENSOR STREAMS
+════════════════════════════════ */
+const waveHist = SENSORS.map(()=>Array(300).fill(0));
+const waveCtxs = [];
+let activeSensors = [0,1,2,3,4];
+let frozen = false;
+let anomalyCounts = SENSORS.map(()=>0);
+
+function initSensors() {
+  buildSSToolbar();
+  buildWavePanels();
+}
+
+function buildSSToolbar() {
+  const tb = document.getElementById('ss-toolbar'); tb.innerHTML = '';
+  SENSORS.forEach((s,i) => {
+    const b=document.createElement('button');
+    b.className='ss-chip'+(activeSensors.includes(i)?' on':'');
+    if(activeSensors.includes(i)){b.style.borderColor=s.color;b.style.color=s.color;b.style.background=s.color+'18';}
+    b.textContent=s.name;
+    b.addEventListener('click',()=>{
+      activeSensors=activeSensors.includes(i)?activeSensors.filter(x=>x!==i):[...activeSensors,i];
+      buildSSToolbar(); buildWavePanels();
+    });
+    tb.appendChild(b);
+  });
+}
+
+function buildWavePanels() {
+  const wrap=document.getElementById('wave-panels'); wrap.innerHTML=''; waveCtxs.length=0;
+  activeSensors.forEach(i=>{
+    const s=SENSORS[i];
+    const card=document.createElement('div'); card.className='wave-card';
+    card.innerHTML=`<div class="wc-head"><div class="wc-name">${s.name}</div><div class="wc-val-wrap"><span class="wc-val" id="wv-${i}" style="color:${s.color}">${s.base.toFixed(2)}</span><span class="wc-unit"> ${s.unit}</span></div><span class="wc-status wc-ok" id="ws-${i}">● Normal</span></div><canvas id="wc-${i}" style="width:100%;height:76px;display:block;background:var(--bg3)" width="1200" height="76"></canvas><div class="wave-foot"><div class="wf-stat">Min<span id="wmn-${i}">—</span></div><div class="wf-stat">Max<span id="wmx-${i}">—</span></div><div class="wf-stat">Avg<span id="wav-${i}">—</span></div><div class="wf-stat">Anomalies<span id="wam-${i}" style="color:var(--red)">0</span></div></div>`;
+    wrap.appendChild(card);
+    setTimeout(()=>{
+      const c=document.getElementById(`wc-${i}`);
+      if(c) waveCtxs.push({i,ctx:c.getContext('2d'),s});
+    },50);
+  });
+}
+
+function updateWaves() {
+  if(frozen||currentPage!=='sensors') return;
+  activeSensors.forEach(i=>{
+    const s=SENSORS[i];
+    const stress = i<2?2.1:1;
+    const v=s.base+(Math.random()-.5)*s.noise*2*stress+Math.sin(Date.now()/(600+i*80))*s.noise*.6;
+    waveHist[i].push(v); waveHist[i].shift();
+    const el=document.getElementById(`wv-${i}`); if(el){el.textContent=v.toFixed(2);el.style.color=v>s.base+s.noise*3.5?'var(--red)':s.color;}
+    const hist=waveHist[i].filter(x=>x>0);
+    if(hist.length){
+      const mn=Math.min(...hist),mx=Math.max(...hist),av=hist.reduce((a,b)=>a+b,0)/hist.length;
+      const mnel=document.getElementById(`wmn-${i}`); if(mnel) mnel.textContent=mn.toFixed(1);
+      const mxel=document.getElementById(`wmx-${i}`); if(mxel) mxel.textContent=mx.toFixed(1);
+      const avel=document.getElementById(`wav-${i}`); if(avel) avel.textContent=av.toFixed(1);
+    }
+    const isAnom=v>s.base+s.noise*3.5;
+    if(isAnom){anomalyCounts[i]++;const amel=document.getElementById(`wam-${i}`); if(amel) amel.textContent=anomalyCounts[i];}
+    const wsel=document.getElementById(`ws-${i}`);
+    if(wsel){wsel.textContent=isAnom?'⚠ Anomaly':'● Normal';wsel.className='wc-status'+(isAnom?' wc-anom':' wc-ok');}
+    const entry=waveCtxs.find(x=>x.i===i);
+    if(entry){
+      const mn2=s.base-s.noise*5, mx2=s.base+s.noise*6;
+      drawWave(entry.ctx,waveHist[i],s.color,mn2,mx2);
+    }
+  });
+}
+
+function drawWave(ctx,data,color,mn,mx){
+  const W=ctx.canvas.width,H=ctx.canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,200,240,0.05)';ctx.lineWidth=.5;
+  [.25,.5,.75].forEach(f=>{ctx.beginPath();ctx.moveTo(0,H*f);ctx.lineTo(W,H*f);ctx.stroke();});
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=(i/(data.length-1))*W,y=H-((v-mn)/(mx-mn+.001))*(H-4)-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,color+'28');g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;ctx.fill();
+}
+
+window.toggleFreeze=()=>{
+  frozen=!frozen;
+  const btn=document.getElementById('freeze-btn');
+  if(btn){btn.textContent=frozen?'▶ Resume':'⏸ Freeze';btn.className='btn '+(frozen?'btn-a':'btn-p');}
+};
+
+/* ════════════════════════════════
+   ALERTS
+════════════════════════════════ */
+let alertFilter='all';
+function initAlerts(){buildAlertList();}
+
+function buildAlertList(){
+  const list=document.getElementById('alert-list'); list.innerHTML='';
+  const filtered=alertFilter==='all'?ALERTS_DATA:ALERTS_DATA.filter(a=>a.type===alertFilter);
+  filtered.forEach(a=>{
+    const tc=a.type==='crit'?'cc':a.type==='warn'?'cw':'ci';
+    const dotC=a.type==='crit'?'crit':a.type==='warn'?'warn':'ok';
+    const row=document.createElement('div'); row.className='alert-row'+(a.ack?' acked':'');
+    row.innerHTML=`<div class="ar-dot dot ${dotC}"></div><div class="ar-msg"><div class="ar-text">${a.msg}</div><div class="ar-meta"><span class="chip ${tc}">${a.type}</span><span>${a.asset}</span><span>${a.time}</span>${a.ack?'<span style="color:var(--teal)">✓ Acked</span>':''}</div></div><div class="ar-acts"><button class="ar-btn" onclick="ackAlert('${a.id}')">${a.ack?'Unack':'Ack'}</button><button class="ar-btn ar-esc" onclick="escalate('${a.id}')">Escalate</button></div>`;
+    list.appendChild(row);
+  });
+  const active=ALERTS_DATA.filter(x=>!x.ack).length;
+  const sub=document.getElementById('alert-sub'); if(sub) sub.textContent=`${active} active · ${ALERTS_DATA.filter(x=>x.ack).length} acknowledged`;
+  const bdg=document.getElementById('alert-bdg'); if(bdg) bdg.textContent=active;
+  const nb=document.getElementById('nb-alerts'); if(nb) nb.textContent=active;
+  // Filters
+  const fwrap=document.getElementById('af-filters'); if(!fwrap.children.length){
+    ['all','crit','warn','info'].forEach(f=>{
+      const b=document.createElement('button');b.className='af-btn'+(f==='all'?' on':'');b.textContent=f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1);
+      b.addEventListener('click',()=>{alertFilter=f;document.querySelectorAll('.af-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');buildAlertList();});
+      fwrap.appendChild(b);
+    });
+  }
+}
+window.ackAlert=id=>{const a=ALERTS_DATA.find(x=>x.id===id);if(a){a.ack=!a.ack;buildAlertList();}};
+window.escalate=id=>{const a=ALERTS_DATA.find(x=>x.id===id);if(a){a.type='crit';a.msg='[ESCALATED] '+a.msg.replace('[ESCALATED] ','');}buildAlertList();};
+window.ackAll=()=>{ALERTS_DATA.forEach(a=>a.ack=true);buildAlertList();};
+
+/* ════════════════════════════════
+   RUL FORECASTS
+════════════════════════════════ */
+let rulChart=null;
+function initRUL(){buildRULCards();buildRULChart();}
+function buildRULCards(){
+  const wrap=document.getElementById('rul-cards'); wrap.innerHTML='';
+  ASSETS.forEach(a=>{
+    const pct=Math.round((a.rul/90)*100);
+    const col=a.rul<14?'var(--red)':a.rul<30?'var(--amber)':'var(--teal)';
+    const sc=a.status==='crit'?'cc':a.status==='warn'?'cw':'ct';
+    const d=document.createElement('div');d.className='rc';
+    d.innerHTML=`<div class="rc-top"><div><div class="rc-id">${a.id}</div><div class="rc-name">${a.name}</div><div class="rc-type">${a.type}</div></div><div class="rc-rul"><div class="rc-days" style="color:${col}">${a.rul}</div><div class="rc-dlbl">days RUL</div><span class="chip ${sc}" style="margin-top:4px">${a.status}</span></div></div><div class="rc-gauge"><div class="rc-gf" style="width:${pct}%;background:${col}"></div></div><div class="rc-stats"><div class="rc-stat"><div class="rc-sl">Confidence</div><div class="rc-sv" style="color:${col}">${84+Math.round(Math.random()*12)}%</div></div><div class="rc-stat"><div class="rc-sl">Model</div><div class="rc-sv">LSTM</div></div><div class="rc-stat"><div class="rc-sl">Last Sync</div><div class="rc-sv">${Math.floor(Math.random()*8)+1}m ago</div></div></div>`;
+    wrap.appendChild(d);
+  });
+}
+function buildRULChart(){
+  const ctx=document.getElementById('rul-chart'); if(!ctx) return;
+  if(rulChart){rulChart.destroy();rulChart=null;}
+  const days=Array.from({length:20},(_,i)=>i);
+  const colors=['#FF3560','#F59500','#00E8A0','#00C8F0','#9B7FFF','#FFD700'];
+  rulChart=new Chart(ctx,{type:'line',data:{labels:days.map(d=>`+${d}d`),datasets:ASSETS.slice(0,5).map((a,i)=>({label:a.id,data:days.map(d=>Math.max(0,a.rul-d+(Math.random()-.5)*1.5)),borderColor:colors[i],borderWidth:1.5,pointRadius:0,tension:.4,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#567090',font:{size:9}}}},scales:{x:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8}}},y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},callback:v=>v+'d'}}}}});
+}
+
+/* ════════════════════════════════
+   KANBAN / WORK ORDERS
+════════════════════════════════ */
+function initKanban(){buildKanban();}
+function buildKanban(){
+  const kb=document.getElementById('kanban'); kb.innerHTML='';
+  const cols=[{key:'open',label:'Open',c:'var(--amber)',bg:'var(--amberD)'},{key:'inprog',label:'In Progress',c:'var(--cyan)',bg:'var(--cyanD)'},{key:'done',label:'Done',c:'var(--teal)',bg:'var(--tealD)'}];
+  cols.forEach(col=>{
+    const c=document.createElement('div');c.className='kb-col';
+    c.innerHTML=`<div class="kb-head"><div class="kb-title">${col.label}</div><div class="kb-count" style="background:${col.bg};color:${col.c}">${WO[col.key].length}</div></div><div class="kb-body" id="kb-${col.key}"></div>`;
+    kb.appendChild(c);
+    const body=c.querySelector('.kb-body');
+    WO[col.key].forEach(wo=>{
+      const card=document.createElement('div');card.className='wo';
+      card.innerHTML=`<div class="wo-top"><span class="mono dim">${wo.id}</span><span class="chip ${wo.p}">${wo.pl}</span></div><div class="wo-title">${wo.title}</div><div class="wo-asset">${wo.asset}</div><div class="wo-foot"><span class="wo-due">Due: ${wo.due}</span><div class="wo-av">${wo.tech}</div></div>`;
+      body.appendChild(card);
+    });
+    if(col.key!=='done'){
+      const add=document.createElement('button');add.className='add-wo';add.textContent='+ Add Work Order';
+      add.addEventListener('click',()=>openAddAsset('wo'));
+      body.appendChild(add);
+    }
+  });
+  buildWOTable();
+}
+function buildWOTable(){
+  const tbody=document.getElementById('wo-tbody');if(!tbody)return;tbody.innerHTML='';
+  [...WO.open,...WO.inprog,...WO.done].forEach(wo=>{
+    const status=WO.open.includes(wo)?'Open':WO.inprog.includes(wo)?'In Progress':'Done';
+    const sc=status==='Open'?'cw':status==='In Progress'?'ci':'ct';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="mono cy">${wo.id}</td><td class="mono">${wo.asset}</td><td>${wo.title}</td><td><span class="chip ${sc}">${status}</span></td><td>${wo.tech}</td><td class="dim">${wo.due}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════
+   MAINTENANCE PLAN
+════════════════════════════════ */
+function initCalendar(){buildCalendar();}
+function buildCalendar(){
+  const lw=document.getElementById('cal-labels');lw.innerHTML='';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{const el=document.createElement('div');el.className='cal-lbl';el.textContent=d;lw.appendChild(el);});
+  const grid=document.getElementById('cal-grid');grid.innerHTML='';
+  for(let i=0;i<0;i++){const b=document.createElement('div');b.className='cal-cell';b.style.opacity='.15';grid.appendChild(b);}
+  for(let d=1;d<=30;d++){
+    const cell=document.createElement('div');
+    cell.className='cal-cell'+(d===16?' today':'')+(CAL_EVENTS[d]?' has-ev':'');
+    let h=`<div class="cal-num">${d}</div>`;
+    if(CAL_EVENTS[d]) CAL_EVENTS[d].forEach(ev=>{h+=`<div class="cal-ev ${ev.cls}">${ev.l}</div>`;});
+    cell.innerHTML=h;grid.appendChild(cell);
+  }
+  const tbody=document.getElementById('mp-tbody');if(!tbody)return;tbody.innerHTML='';
+  [{date:'Jun 21',a:'CNC-07',t:'Replace bearing B-7209',type:'Critical',tc:'cc',dur:'4h',tech:'RK',parts:'B-7209 × 2'},
+   {date:'Jun 28',a:'ROB-03',t:'Inspect gear assembly J4',type:'High',tc:'cw',dur:'3h',tech:'AK',parts:'Gear set GS-44'},
+   {date:'Jun 28',a:'PMP-09',t:'Clean inlet filter',type:'High',tc:'cw',dur:'1.5h',tech:'SP',parts:'Filter F-09'},
+   {date:'Jul 2', a:'CMP-02',t:'Replace valve V2',type:'Medium',tc:'ci',dur:'2h',tech:'TM',parts:'Valve V2-C'},
+   {date:'Jul 5', a:'CNV-01',t:'Belt tension adjustment',type:'Medium',tc:'ci',dur:'1h',tech:'SP',parts:'Lubricant'}
+  ].forEach(e=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="mono cy">${e.date}</td><td class="mono">${e.a}</td><td>${e.t}</td><td><span class="chip ${e.tc}">${e.type}</span></td><td class="dim">${e.dur}</td><td>${e.tech}</td><td class="dim">${e.parts}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ════════════════════════════════
+   ROOT CAUSE AI
+════════════════════════════════ */
+let rcaTarget=0;
+function initRCA(){buildRCA();}
+const SHAP=[
+  [{f:'Sub-harmonic vibration (47Hz)',v:.41,pos:true},{f:'Bearing temperature rise',v:.28,pos:true},{f:'Acoustic emission pattern',v:.22,pos:true},{f:'Spindle current draw',v:.12,pos:true},{f:'Coolant flow rate',v:-.06,pos:false},{f:'Ambient temperature',v:-.09,pos:false}],
+  [{f:'Joint torque variance',v:.38,pos:true},{f:'Position error (Z-axis)',v:.24,pos:true},{f:'Motor current J4',v:.19,pos:true},{f:'Cycle time deviation',v:.11,pos:true},{f:'Encoder signal quality',v:-.05,pos:false},{f:'Lubrication level',v:-.08,pos:false}],
+  [{f:'Suction pressure drop',v:.44,pos:true},{f:'Flow rate reduction',v:.26,pos:true},{f:'Inlet vacuum reading',v:.18,pos:true},{f:'Pump current draw',v:.09,pos:true},{f:'Discharge pressure',v:-.07,pos:false},{f:'Outlet temperature',v:-.04,pos:false}],
+];
+const RCA_FAULTS=[['Bearing Failure','Inner Race Wear','Heat Buildup'],['Joint Failure','Gear Wear','Torque Overload'],['Pump Cavitation','Inlet Restriction','Pressure Loss']];
+const RCA_SUMMARIES=[
+  [{l:'Root Cause',v:'Inner-race bearing wear from lubrication starvation',c:'var(--red)'},{l:'Contributing Factors',v:'Elevated temperature + sub-harmonic vibration at 47 Hz',c:'var(--amber)'},{l:'Recommended Fix',v:'Replace bearing B-7209, flush lubrication circuit, re-grease',c:'var(--teal)'}],
+  [{l:'Root Cause',v:'Joint 4 gear backlash from gradual wear over 8,200 cycles',c:'var(--red)'},{l:'Contributing Factors',v:'Torque spikes >130 Nm + position error trending upward',c:'var(--amber)'},{l:'Recommended Fix',v:'Replace gear set GS-44, recalibrate joint encoder Z',c:'var(--teal)'}],
+  [{l:'Root Cause',v:'Inlet filter restriction causing suction-side cavitation',c:'var(--red)'},{l:'Contributing Factors',v:'Flow rate -12%, suction vacuum at 85% of cavitation threshold',c:'var(--amber)'},{l:'Recommended Fix',v:'Replace filter F-09, inspect impeller for erosion pitting',c:'var(--teal)'}],
+];
+
+function buildRCA(){
+  const sel=document.getElementById('rca-sel');sel.innerHTML='';
+  ['CNC-07 — Bearing','ROB-03 — Joint 4','PMP-09 — Pump'].forEach((t,i)=>{
+    const b=document.createElement('button');b.className='ar-btn'+(i===rcaTarget?' acked':'');
+    b.style.cssText=i===rcaTarget?'border-color:var(--red);color:var(--red);background:var(--redD)':'';
+    b.textContent=t;
+    b.addEventListener('click',()=>{rcaTarget=i;buildRCA();});
+    sel.appendChild(b);
+  });
+  const sw=document.getElementById('shap-wrap');sw.innerHTML='';
+  SHAP[rcaTarget].forEach(r=>{
+    const row=document.createElement('div');row.className='shap-row';
+    row.innerHTML=`<div class="shap-feat">${r.f}</div><div class="shap-track"><div class="shap-bar ${r.pos?'shap-pos':'shap-neg'}" style="width:${Math.round(r.v*220)}%"></div></div><div class="shap-val" style="color:${r.pos?'var(--red)':'var(--cyan)'}">${r.pos?'+':'-'}${r.v.toFixed(2)}</div>`;
+    sw.appendChild(row);
+  });
+  const f=RCA_FAULTS[rcaTarget];
+  document.getElementById('ft-wrap').innerHTML=`<div class="ft-wrap"><div class="ft-node-box ft-root-box">${f[0]}</div><div class="ft-line"></div><div class="ft-branch"><div class="ft-sub"><div style="width:1px;height:16px;background:var(--bdr2)"></div><div class="ft-node-box ft-mid-box">${f[1]}</div></div><div class="ft-sub"><div style="width:1px;height:16px;background:var(--bdr2)"></div><div class="ft-node-box ft-mid-box">${f[2]}</div></div></div></div>`;
+  const sum=document.getElementById('rca-summary');sum.innerHTML='';
+  RCA_SUMMARIES[rcaTarget].forEach(s=>{
+    const d=document.createElement('div');
+    d.style.cssText='background:var(--bg3);border:1px solid var(--bdr);border-radius:9px;padding:14px;';
+    d.innerHTML=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${s.c};margin-bottom:7px">${s.l}</div><div style="font-size:12px;color:var(--text);line-height:1.65">${s.v}</div>`;
+    sum.appendChild(d);
+  });
+}
+
+/* ════════════════════════════════
+   TREND ANALYSIS
+════════════════════════════════ */
+let trendChart2=null,fftChart=null,anomChart=null;
+let trendAssets=[0,1,2];
+function initTrend(){buildTrendChips();buildTrendCharts();}
+function buildTrendChips(){
+  const wrap=document.getElementById('trend-chips');wrap.innerHTML='';
+  ASSETS.forEach((a,i)=>{
+    const b=document.createElement('button');b.className='tr-chip'+(trendAssets.includes(i)?' on':'');
+    b.textContent=a.id;
+    b.addEventListener('click',()=>{
+      trendAssets=trendAssets.includes(i)?trendAssets.filter(x=>x!==i):[...trendAssets,i];
+      buildTrendChips();buildTrendCharts();
+    });
+    wrap.appendChild(b);
+  });
+}
+function buildTrendCharts(){
+  [trendChart2,fftChart,anomChart].forEach(c=>{if(c)c.destroy();});
+  trendChart2=fftChart=anomChart=null;
+  const colors=['#FF3560','#F59500','#00E8A0','#00C8F0','#9B7FFF','#FFD700'];
+  const days=Array.from({length:30},(_,i)=>i+1);
+  const tc=document.getElementById('trend-chart');
+  if(tc) trendChart2=new Chart(tc,{type:'line',data:{labels:days.map(d=>`D${d}`),datasets:trendAssets.map(i=>({label:ASSETS[i].id,data:days.map(d=>Math.max(20,ASSETS[i].health-(d*.25+Math.random()*3-1.5))),borderColor:colors[i],borderWidth:1.5,pointRadius:0,tension:.4,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#567090',font:{size:9}}}},scales:{x:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8}}},y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},callback:v=>v+'%'},min:0,max:100}}}});
+  const freqs=Array.from({length:100},(_,i)=>(i+1)*1.5);
+  const fc=document.getElementById('fft-chart');
+  if(fc) fftChart=new Chart(fc,{type:'line',data:{labels:freqs.map(f=>f.toFixed(0)+'Hz'),datasets:trendAssets.map(i=>({label:ASSETS[i].id,data:freqs.map(f=>{const peak=Math.exp(-Math.pow(f-47,2)/60)*(i===0?3.2:1.1)+Math.exp(-Math.pow(f-94,2)/80)*.7+Math.random()*.2;return peak;}),borderColor:colors[i],borderWidth:1.2,pointRadius:0,tension:.1,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#567090',font:{size:9}}}},scales:{x:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},maxTicksLimit:10}},y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8}}}}}});
+  buildCorrMatrix();
+  const ac=document.getElementById('anom-chart');
+  const aLabels=Array.from({length:14},(_,i)=>`Jun ${i+3}`);
+  if(ac) anomChart=new Chart(ac,{type:'bar',data:{labels:aLabels,datasets:[{label:'Anomalies',data:aLabels.map(()=>Math.floor(Math.random()*7)),backgroundColor:aLabels.map(()=>Math.random()>.65?'rgba(255,53,96,.7)':'rgba(245,149,0,.5)'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#567090',font:{size:8}}},y:{grid:{color:'rgba(0,200,240,.05)'},ticks:{color:'#567090',font:{size:8},stepSize:1}}}}});
+}
+function buildCorrMatrix(){
+  const labels=['Vibration','Temp','Acoustic','Current','Flow'];const n=labels.length;
+  const corr=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:(Math.random()>.5?1:-1)*(.3+Math.random()*.65)));
+  const wrap=document.getElementById('corr-matrix');if(!wrap)return;
+  const sz=36;
+  let html=`<div style="display:grid;grid-template-columns:80px repeat(${n},${sz}px);gap:2px;align-items:center">`;
+  html+=`<div></div>${labels.map(l=>`<div style="font-size:8px;color:var(--textD);text-align:center;writing-mode:vertical-lr;height:${sz}px;display:flex;align-items:center;justify-content:center">${l}</div>`).join('')}`;
+  labels.forEach((rl,i)=>{
+    html+=`<div style="font-size:8.5px;color:var(--textD);text-align:right;padding-right:6px">${rl}</div>`;
+    labels.forEach((_,j)=>{
+      const v=corr[i][j];const abs=Math.abs(v);
+      const bg=v>0?`rgba(255,53,96,${abs*.7})`:`rgba(0,200,240,${abs*.7})`;
+      html+=`<div title="${rl}×${labels[j]}: ${v.toFixed(2)}" style="width:${sz}px;height:${sz}px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:8.5px;font-weight:600;color:${abs>.4?'#fff':'rgba(255,255,255,.4)'}">${v.toFixed(1)}</div>`;
+    });
+  });
+  html+=`</div>`;wrap.innerHTML=html;
+}
+
+/* ════════════════════════════════
+   ADD ASSET MODAL
+════════════════════════════════ */
+window.openAddAsset=()=>{
+  document.getElementById('modal').style.display='flex';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-id').value='';
+  document.getElementById('f-type').value='';
+  document.getElementById('f-mfr').value='';
+  document.getElementById('f-date').value='';
+  document.getElementById('f-date').valueAsDate=new Date();
+  updatePreview();
+};
+window.closeModal=()=>{ document.getElementById('modal').style.display='none'; };
+window.updatePreview=()=>{
+  const name=document.getElementById('f-name').value||'Asset Name';
+  const id=document.getElementById('f-id').value||'ASSET-ID';
+  const type=document.getElementById('f-type').value||'Select type below';
+  document.getElementById('prev-name').textContent=name;
+  document.getElementById('prev-id').textContent=id;
+  document.getElementById('prev-type').textContent=type;
+};
+window.submitAsset=()=>{
+  const name=document.getElementById('f-name').value.trim();
+  const id=document.getElementById('f-id').value.trim().toUpperCase();
+  const type=document.getElementById('f-type').value;
+  const zone=document.getElementById('f-zone').value;
+  const mfr=document.getElementById('f-mfr').value.trim();
+  if(!name||!id||!type){
+    alert('Please fill in Asset Name, ID, and Type.');return;
+  }
+  if(ASSETS.find(a=>a.id===id)){alert(`Asset ID "${id}" already exists.`);return;}
+  ASSETS.push({id,name,type,rul:90,health:100,status:'ok',zone,mfr:mfr||'Unknown'});
+  closeModal();
+  showToast('Asset Registered',`${name} (${id}) is now monitored`,'✓');
+  // Refresh current page
+  if(currentPage==='overview'){ovInitDone=false;initOverview();}
+  if(currentPage==='twins'){initTwins();}
+  if(currentPage==='rul'){initRUL();}
+  updateOvSub();
+};
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+function showToast(title,msg,icon='✓'){
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<div class="toast-icon" style="color:var(--teal)">${icon}</div><div><div class="toast-msg">${title}</div><div class="toast-sub">${msg}</div></div>`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.style.opacity='0',3500);
+  setTimeout(()=>t.remove(),3800);
+}
+
+/* ════════════════════════════════
+   OVERVIEW SENSOR LOOP
+════════════════════════════════ */
+function updateOvSensors(){
+  if(currentPage!=='overview') return;
+  const a=ASSETS[selAsset];
+  const sm=a.status==='crit'?2.2:a.status==='warn'?1.4:1;
+  SENSORS.forEach((s,i)=>{
+    const v=s.base+(Math.random()-.5)*s.noise*2*sm;
+    sHist[i].push(v);sHist[i].shift();
+    const el=document.getElementById(`osv-${i}`);if(el) el.textContent=v.toFixed(1);
+    const ctx=sCanvCtxs[i];
+    if(ctx) drawWave(ctx,sHist[i],s.color,s.base-s.noise*4,s.base+s.noise*4*sm);
+  });
+}
+
+/* ════════════════════════════════
+   TWIN HUD LIVE UPDATE
+════════════════════════════════ */
+function updateTwinHUD(){
+  if(currentPage==='twins'&&threeRenderer) updateHUD();
+}
+
+/* ════════════════════════════════
+   MASTER TIMER — 700ms
+════════════════════════════════ */
+setInterval(()=>{
+  updateOvSensors();
+  updateWaves();
+  updateTwinHUD();
+  // drift asset health/rul over time
+  ASSETS.forEach(a=>{
+    if(Math.random()>.95){
+      a.health=Math.max(5,Math.min(100,a.health+(Math.random()>.4?-.1:.05)));
+      a.rul=Math.max(1,a.rul-(Math.random()>.85?.1:0));
+    }
+  });
+}, 700);
+
+// Slower 5s updates for KPIs
+setInterval(()=>{
+  if(currentPage==='overview'){buildKPIRow();buildOvAlerts();}
+  if(currentPage==='rul'){buildRULCards();}
+}, 5000);
+
+// Twin log refresh
+setInterval(()=>{ if(currentPage==='twins') buildTwinLog(); },4000);
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+buildNav();
+buildTicker();
+initOverview();
+updateInsight();
+</script>
+</body>
+</html>
